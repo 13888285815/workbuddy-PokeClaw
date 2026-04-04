@@ -107,15 +107,30 @@ class ChatActivity : BaseActivity() {
 
     private fun loadModel(modelPath: String) {
         try {
+            // Try GPU first, fall back to CPU if GPU not supported
+            val backend = try {
+                runOnUiThread { tvStatus.text = "Trying GPU backend..." }
+                Backend.GPU()
+            } catch (e: Exception) {
+                XLog.w(TAG, "GPU backend not available, falling back to CPU", e)
+                runOnUiThread { tvStatus.text = "GPU not available, using CPU..." }
+                Backend.CPU()
+            }
+
+            runOnUiThread { tvStatus.text = "Initializing engine (${if (backend is Backend.GPU) "GPU" else "CPU"})..." }
+
             val engineConfig = EngineConfig(
                 modelPath = modelPath,
-                backend = Backend.GPU(),
-                maxNumTokens = 4096,
+                backend = backend,
+                maxNumTokens = 2048,
                 cacheDir = cacheDir.path
             )
             engine = Engine(engineConfig)
+
+            runOnUiThread { tvStatus.text = "Loading model (this may take a minute)..." }
             engine!!.initialize()
 
+            runOnUiThread { tvStatus.text = "Creating conversation..." }
             conversation = engine!!.createConversation(
                 ConversationConfig(
                     systemInstruction = Contents.of("You are a helpful assistant on an Android phone."),

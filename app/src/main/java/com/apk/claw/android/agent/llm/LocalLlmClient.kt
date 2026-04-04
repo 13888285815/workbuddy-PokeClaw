@@ -46,10 +46,16 @@ class LocalLlmClient(private val config: AgentConfig) : LlmClient {
         XLog.i(TAG, "Initializing LiteRT-LM engine with model: $modelPath")
 
         val context = ClawApplication.instance
+        val backend = try {
+            Backend.GPU()
+        } catch (e: Exception) {
+            XLog.w(TAG, "GPU backend not available, falling back to CPU", e)
+            Backend.CPU()
+        }
         val engineConfig = EngineConfig(
             modelPath = modelPath,
-            backend = Backend.GPU(),
-            maxNumTokens = 4096,
+            backend = backend,
+            maxNumTokens = 2048,
             cacheDir = context.cacheDir.path
         )
         engine = Engine(engineConfig).also { it.initialize() }
