@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBgPrimary"
+    android:orientation="vertical">
+
+    <com.apk.claw.android.widget.CommonToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56pt" />
+
+    <!-- Status bar -->
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1AFFFFFF"
+        android:paddingHorizontal="16pt"
+        android:paddingVertical="8pt"
+        android:text="Loading model..."
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="13pt" />
+
+    <!-- Chat messages -->
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:paddingHorizontal="16pt"
+        android:paddingTop="8pt">
+
+        <LinearLayout
+            android:id="@+id/layoutMessages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </ScrollView>
+
+    <!-- Input bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1A000000"
+        android:orientation="horizontal"
+        android:padding="12pt">
+
+        <EditText
+            android:id="@+id/etInput"
+            android:layout_width="0dp"
+            android:layout_height="44pt"
+            android:layout_weight="1"
+            android:background="@drawable/bg_input_field"
+            android:hint="Type a message..."
+            android:inputType="text"
+            android:maxLines="1"
+            android:paddingHorizontal="14pt"
+            android:singleLine="true"
+            android:textColor="@color/colorTextPrimary"
+            android:textColorHint="@color/colorTextTertiary"
+            android:textSize="15pt" />
+
+        <com.apk.claw.android.widget.KButton
+            android:id="@+id/btnSend"
+            android:layout_width="wrap_content"
+            android:layout_height="44pt"
+            android:layout_marginStart="8pt"
+            android:paddingHorizontal="20pt"
+            android:text="Send"
+            android:textSize="15pt" />
+    </LinearLayout>
+
+</LinearLayout>

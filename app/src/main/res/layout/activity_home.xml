@@ -69,6 +69,16 @@
         app:cardSubtitle="@string/home_card_storage_subtitle"
         app:layout_constraintTop_toBottomOf="@id/cardBattery" />
 
+    <!-- Chat button -->
+    <com.apk.claw.android.widget.KButton
+        android:id="@+id/btnChat"
+        android:layout_width="match_parent"
+        android:layout_height="48pt"
+        android:layout_marginTop="20pt"
+        android:text="Chat with Local LLM"
+        android:textSize="16pt"
+        app:layout_constraintTop_toBottomOf="@id/cardStorage" />
+
     <!-- Direct task input -->
     <LinearLayout
         android:id="@+id/layoutTaskInput"
@@ -76,7 +86,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20pt"
         android:orientation="vertical"
-        app:layout_constraintTop_toBottomOf="@id/cardStorage">
+        app:layout_constraintTop_toBottomOf="@id/btnChat">
 
         <TextView
             android:layout_width="wrap_content"

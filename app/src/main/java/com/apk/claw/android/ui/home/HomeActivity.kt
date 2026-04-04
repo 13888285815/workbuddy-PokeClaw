@@ -21,6 +21,7 @@ import com.apk.claw.android.appViewModel
 import com.apk.claw.android.base.BaseActivity
 import com.apk.claw.android.channel.Channel as ChannelEnum
 import com.apk.claw.android.service.ClawAccessibilityService
+import com.apk.claw.android.ui.chat.ChatActivity
 import com.apk.claw.android.ui.guide.GuideActivity
 import com.apk.claw.android.ui.settings.SettingsActivity
 import com.apk.claw.android.utils.KVUtils
@@ -137,6 +138,11 @@ class HomeActivity : BaseActivity() {
                 Toast.makeText(this, R.string.home_no_task_running, Toast.LENGTH_SHORT).show()
             }
             updateCancelTaskVisibility()
+        }
+
+        // Chat button
+        findViewById<KButton>(R.id.btnChat).setOnClickListener {
+            startActivity(Intent(this, ChatActivity::class.java))
         }
 
         // Task input
