@@ -2,6 +2,7 @@ package com.apk.claw.android.ui.settings
 
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.ProgressBar
@@ -68,6 +69,19 @@ class LlmConfigActivity : BaseActivity() {
             tvModelStatus.text = if (downloaded) "Downloaded" else "Not downloaded"
             btnDownload.text = if (downloaded) "Re-download" else "Download Model"
         }
+
+        // Update status when model selection changes
+        spinnerModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                updateModelStatus()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        // Restore saved model selection
+        val savedModelName = KVUtils.getLlmModelName()
+        val savedIndex = models.indexOfFirst { it.id == savedModelName }
+        if (savedIndex >= 0) spinnerModel.setSelection(savedIndex)
 
         // Restore provider selection
         val currentProvider = KVUtils.getLlmProvider()
