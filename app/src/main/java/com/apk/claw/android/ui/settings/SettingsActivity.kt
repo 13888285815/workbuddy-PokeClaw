@@ -1,6 +1,9 @@
 package com.apk.claw.android.ui.settings
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
@@ -20,6 +23,8 @@ import android.content.Intent
 import com.apk.claw.android.appViewModel
 import com.apk.claw.android.server.ConfigServerManager
 import com.apk.claw.android.service.ClawAccessibilityService
+import com.apk.claw.android.service.ForegroundService
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 
 /**
@@ -166,10 +171,62 @@ class SettingsActivity : BaseActivity() {
                     Toast.makeText(this, "Already disabled", Toast.LENGTH_SHORT).show()
                 }
             },
-            showDivider = false
+            showDivider = true
         ).apply {
             val pm = getSystemService(POWER_SERVICE) as PowerManager
             setTrailingText(if (pm.isIgnoringBatteryOptimizations(packageName)) "Unrestricted" else "Restricted")
+        }
+
+        permissionsGroup.addMenuItem(
+            leadingIcon = android.R.drawable.ic_popup_reminder,
+            title = "Notifications",
+            onClick = {
+                if (!ForegroundService.isRunning()) {
+                    val started = ForegroundService.start(this)
+                    if (started) {
+                        Toast.makeText(this, "Notification service started", Toast.LENGTH_SHORT).show()
+                    } else {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100)
+                        }
+                    }
+                } else {
+                    Toast.makeText(this, "Already enabled", Toast.LENGTH_SHORT).show()
+                }
+            },
+            showDivider = true
+        ).apply {
+            setTrailingText(if (ForegroundService.isRunning()) "Enabled" else "Disabled")
+        }
+
+        permissionsGroup.addMenuItem(
+            leadingIcon = android.R.drawable.ic_menu_save,
+            title = "Storage Access",
+            onClick = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    if (!Environment.isExternalStorageManager()) {
+                        startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                            data = "package:$packageName".toUri()
+                        })
+                    } else {
+                        Toast.makeText(this, "Already enabled", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), 101)
+                    } else {
+                        Toast.makeText(this, "Already enabled", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            showDivider = false
+        ).apply {
+            val granted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Environment.isExternalStorageManager()
+            } else {
+                ContextCompat.checkSelfPermission(this@SettingsActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            }
+            setTrailingText(if (granted) "Enabled" else "Disabled")
         }
 
         val modelGroup = findViewById<MenuGroup>(R.id.modelGroup)
