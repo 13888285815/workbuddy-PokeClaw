@@ -10,13 +10,10 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.apk.claw.android.R
-import com.apk.claw.android.ClawApplication
 import com.apk.claw.android.appViewModel
 import com.apk.claw.android.base.BaseActivity
-import com.apk.claw.android.agent.AgentCallback
 import com.apk.claw.android.channel.Channel as ChannelEnum
 import com.apk.claw.android.service.ClawAccessibilityService
-import com.apk.claw.android.tool.ToolResult
 import com.apk.claw.android.ui.settings.LlmConfigActivity
 import com.apk.claw.android.ui.settings.SettingsActivity
 import com.apk.claw.android.utils.KVUtils
