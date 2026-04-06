@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="pokeclaw.png" width="200" />
+  <img src="banna.png" width="600" />
 </p>
 
 # PokeClaw
