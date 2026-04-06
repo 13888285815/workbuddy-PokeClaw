@@ -142,9 +142,8 @@ class AppViewModel : ViewModel() {
      */
     private fun bringAppToForeground() {
         val context = ClawApplication.instance
-        val intent = android.content.Intent(context, HomeActivity::class.java).apply {
+        val intent = android.content.Intent(context, io.agents.pokeclaw.ui.chat.ComposeChatActivity::class.java).apply {
             flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
-                    android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or
                     android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         context.startActivity(intent)
