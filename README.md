@@ -16,7 +16,7 @@ So I pulled two all-nighters and built it.
 
 As far as I know, this is the first working app built on Gemma 4 that can autonomously control an Android phone.
 
-The entire pipeline is a closed loop inside your device. The model reads the screen, picks a tool, executes, reads the result, loops. Nothing leaves.
+The entire pipeline is a closed loop inside your device. No Wifi needed,No monthly billing for the API keys.
 
 
 ```
