@@ -167,7 +167,7 @@ Every issue makes this better. Every star helps more people find it.
 - **Auto-reply now reads conversation context.** Before replying, the AI opens the chatroom and reads all visible messages on screen. It no longer forgets what was said 3 messages ago.
 - **In-app update checker.** The app checks GitHub Releases once per day and prompts you to download if a newer version exists. No more manually checking.
 
-### v0.1.0 (2026-04-04)
+### v0.1.0 (2026-04-06)
 - Initial release. On-device Gemma 4 E2B with tool calling, accessibility-based phone control, auto-reply, task mode.
 
 ## Acknowledgments
