@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -161,6 +162,11 @@ fun ChatScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
+                // Permission banner at top
+                if (needsPermission && !isDownloading) {
+                    PermissionBanner(onClick = onFixPermissions, colors = colors)
+                }
+
                 // Messages or empty state with suggested prompts
                 val userMessages = messages.filter { it.role != ChatMessage.Role.SYSTEM }
                 if (userMessages.isEmpty() && !isDownloading) {
@@ -229,16 +235,36 @@ private fun ChatTopBar(
                 actionIconContentColor = colors.textSecondary,
             ),
         )
-        // Model status
-        Text(
-            text = modelStatus,
-            fontSize = 11.sp,
-            color = colors.textTertiary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(colors.surface)
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-        )
+        // Model status with animated dots when loading
+        val isLoading = modelStatus == "Loading..." || modelStatus.startsWith("Downloading")
+        if (isLoading) {
+            val infiniteTransition = rememberInfiniteTransition(label = "loading")
+            val dotCount by infiniteTransition.animateFloat(
+                initialValue = 0f, targetValue = 4f,
+                animationSpec = infiniteRepeatable(tween(1200), RepeatMode.Restart),
+                label = "dots",
+            )
+            val dots = ".".repeat(dotCount.toInt().coerceIn(0, 3))
+            Text(
+                text = modelStatus.trimEnd('.') + dots,
+                fontSize = 11.sp,
+                color = colors.accent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(colors.surface)
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        } else {
+            Text(
+                text = modelStatus,
+                fontSize = 11.sp,
+                color = colors.textTertiary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(colors.surface)
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
         HorizontalDivider(color = colors.divider, thickness = 0.5.dp)
     }
 }
@@ -411,15 +437,45 @@ private fun TypingIndicator(color: Color, modifier: Modifier = Modifier) {
 
 @Composable
 private fun SystemMessage(text: String, colors: PokeclawColors) {
-    Text(
-        text = text,
-        color = colors.textTertiary,
-        fontSize = 12.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 40.dp, vertical = 6.dp),
-    )
+    val isImportant = text.startsWith("Task") || text.startsWith("Starting") || text.startsWith("Blocked")
+    if (isImportant) {
+        val bgColor = when {
+            text.startsWith("Task completed") -> Color(0xFF2BA471).copy(alpha = 0.12f)
+            text.startsWith("Task failed") || text.startsWith("Blocked") -> Color(0xFFF6685D).copy(alpha = 0.12f)
+            else -> colors.accent.copy(alpha = 0.10f)
+        }
+        val textColor = when {
+            text.startsWith("Task completed") -> Color(0xFF2BA471)
+            text.startsWith("Task failed") || text.startsWith("Blocked") -> Color(0xFFF6685D)
+            else -> colors.accent
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = bgColor,
+            ) {
+                Text(
+                    text = text,
+                    color = textColor,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
+        }
+    } else {
+        Text(
+            text = text,
+            color = colors.textTertiary,
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 40.dp, vertical = 6.dp),
+        )
+    }
 }
 
 @Composable
@@ -475,7 +531,9 @@ private fun ChatInputBar(
         }
     }
 
-    Column(modifier = Modifier.background(colors.surface)) {
+    Column(modifier = Modifier.background(
+        if (isTaskMode) colors.accent.copy(alpha = 0.04f) else colors.surface
+    )) {
         HorizontalDivider(color = colors.divider, thickness = 0.5.dp)
 
         // Mode toggle tabs — Material Icons, no emoji
@@ -515,7 +573,7 @@ private fun ChatInputBar(
                 onValueChange = { text = it },
                 placeholder = {
                     Text(
-                        if (isTaskMode) "Tell me what to do..." else "Ask anything...",
+                        if (isTaskMode) "What should I do on your phone?" else "Ask anything...",
                         color = colors.textTertiary,
                         fontSize = 14.sp,
                     )
@@ -558,7 +616,7 @@ private fun ChatInputBar(
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
             ) {
                 Icon(
-                    if (isTaskMode) Icons.Outlined.TouchApp else Icons.Default.ArrowUpward,
+                    if (isTaskMode) Icons.Outlined.PlayArrow else Icons.Default.ArrowUpward,
                     contentDescription = "Send",
                     tint = Color.White,
                     modifier = Modifier.size(18.dp),
