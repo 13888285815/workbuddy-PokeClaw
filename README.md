@@ -1,5 +1,13 @@
 # PokeClaw
 
+
+https://github.com/user-attachments/assets/6409df29-0013-406d-9037-ada6ee84df3a
+
+
+
+https://github.com/user-attachments/assets/66ceeac0-1226-4d05-8e58-4a2c005d9d6a
+
+
 Your phone, on autopilot. No cloud, no API keys, no data leaving your device.
 
 PokeClaw runs Gemma 4 (2.3B) entirely on your Android phone and controls it through accessibility. Tell it what to do in plain language, it figures out the taps, swipes, and typing.
