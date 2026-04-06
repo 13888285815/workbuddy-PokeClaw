@@ -8,7 +8,12 @@
 
 # PokeClaw (PocketClaw) - A Pocket Versoin Of OpenClaw
 
+Gemma 4 has only been out for a few days.  
+This is a working Android app built on top of it.
 
+PokeClaw brings local AI agents onto your phone — combining on-device LLMs with Android Accessibility to create a controllable, private mobile agent.
+
+Built as an experiment. Turned into a working system.
 
 https://github.com/user-attachments/assets/c713e227-7581-4475-acd4-0480128c8ec8
 
