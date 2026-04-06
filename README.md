@@ -15,6 +15,14 @@ https://github.com/user-attachments/assets/c713e227-7581-4475-acd4-0480128c8ec8
 
 https://github.com/user-attachments/assets/18d49148-c744-46a5-98a2-0f8320f00d19
 
+> **Why is the "hi" demo slow?** This was recorded on a budget Android phone with CPU-only inference (no GPU, no NPU). Running Gemma 4 E2B on CPU takes ~45 seconds to warm up. If your phone has a GPU-capable chip, it's **significantly faster**:
+> - **Google Tensor G3/G4** (Pixel 8, Pixel 9)
+> - **Snapdragon 8 Gen 2/3** (Galaxy S24, OnePlus 12)
+> - **Dimensity 9200/9300** (recent MediaTek flagships)
+> - **Snapdragon 7+ Gen 2+** (mid-range with GPU)
+>
+> On these devices, warmup drops to seconds. Same model, better hardware.
+
 
 
 
