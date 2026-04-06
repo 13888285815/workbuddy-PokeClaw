@@ -106,7 +106,7 @@ Steps:
 ### Skill: Monitor & Auto-Reply
 Purpose: Monitor someone's messages and auto-reply. Keywords: monitor, auto-reply, watch messages
 Steps:
-1. Call auto_reply(contact=<person mentioned by user>, app=<app mentioned by user or default WhatsApp>)
+1. Call auto_reply(action="on", contact=<person mentioned by user>)
 2. Immediately call finish(summary="Auto-reply enabled for [contact]"). Do not do anything else. No tap, no get_screen_info, no open_app. The only next step after auto_reply is finish.
 
 Important: If the user says "send", "tell", "say" → use Send Message. If the user says "monitor", "watch", "auto-reply" → use Monitor & Auto-Reply. Do not confuse them."""

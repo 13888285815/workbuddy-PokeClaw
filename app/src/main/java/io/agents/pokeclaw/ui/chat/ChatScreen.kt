@@ -83,8 +83,11 @@ fun ChatScreen(
     isProcessing: Boolean,
     isDownloading: Boolean = false,
     downloadProgress: Int = 0,
+    isLocalModel: Boolean = true,
     onSendChat: (String) -> Unit,
     onSendTask: (String) -> Unit,
+    onStartMonitor: (contact: String) -> Unit = {},
+    onSendDirectMessage: (contact: String, app: String, message: String) -> Unit = { _, _, _ -> },
     onNewChat: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenModels: () -> Unit,
@@ -92,6 +95,9 @@ fun ChatScreen(
     onAttach: () -> Unit,
     conversations: List<ChatHistoryManager.ConversationSummary>,
     onSelectConversation: (ChatHistoryManager.ConversationSummary) -> Unit,
+    activeTasks: List<String> = emptyList(),
+    onStopTask: (String) -> Unit = {},
+    onStopAllTasks: () -> Unit = {},
     colors: PokeclawColors = AbyssDark,
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -99,6 +105,20 @@ fun ChatScreen(
     // Shared state for prompt chip → input bar prefill
     var prefillText by remember { mutableStateOf("") }
     var prefillIsTask by remember { mutableStateOf(false) }
+    // Task mode state — lifted here so content area can react
+    var isTaskMode by remember { mutableStateOf(false) }
+    // Skill dialog and activation states
+    var showMonitorSheet by remember { mutableStateOf(false) }
+    var showSendSheet by remember { mutableStateOf(false) }
+    var activatingSkill by remember { mutableStateOf<String?>(null) }
+
+    // When activating finishes (2s animation), clear state
+    LaunchedEffect(activatingSkill) {
+        if (activatingSkill != null) {
+            kotlinx.coroutines.delay(2000)
+            activatingSkill = null
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -133,18 +153,31 @@ fun ChatScreen(
             modifier = Modifier.imePadding(),
             containerColor = colors.background,
             topBar = {
-                ChatTopBar(
-                    modelStatus = modelStatus,
-                    onMenuClick = { scope.launch { drawerState.open() } },
-                    onNewChat = onNewChat,
-                    onSettings = onOpenSettings,
-                    colors = colors,
-                )
+                Column {
+                    ChatTopBar(
+                        modelStatus = modelStatus,
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onNewChat = onNewChat,
+                        onSettings = onOpenSettings,
+                        colors = colors,
+                    )
+                    if (activeTasks.isNotEmpty()) {
+                        ActiveTaskBar(
+                            tasks = activeTasks,
+                            onStopTask = onStopTask,
+                            onStopAll = onStopAllTasks,
+                            colors = colors,
+                        )
+                    }
+                }
             },
             bottomBar = {
                 if (!isDownloading) {
                     ChatInputBar(
                         isProcessing = isProcessing,
+                        isTaskMode = isTaskMode,
+                        isLocalModel = isLocalModel,
+                        onTaskModeChange = { isTaskMode = it },
                         onSendChat = onSendChat,
                         onSendTask = onSendTask,
                         onAttach = onAttach,
@@ -161,23 +194,41 @@ fun ChatScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Messages or empty state with suggested prompts
-                val userMessages = messages.filter { it.role != ChatMessage.Role.SYSTEM }
-                if (userMessages.isEmpty() && !isDownloading) {
-                    EmptyStateWithPrompts(
-                        onSelectPrompt = { text, isTask ->
-                            prefillText = text
-                            prefillIsTask = isTask
-                        },
+                if (isTaskMode && !isDownloading) {
+                    // Task mode: show skill cards + any task progress messages
+                    val taskMessages = messages.filter {
+                        it.role == ChatMessage.Role.SYSTEM ||
+                        (it.role == ChatMessage.Role.USER && it.content.startsWith("🚀"))
+                    }
+                    TaskSkillsPanel(
+                        taskMessages = taskMessages,
+                        onMonitorClick = { showMonitorSheet = true },
+                        onSendClick = { showSendSheet = true },
+                        activatingSkill = activatingSkill,
+                        monitorActive = activeTasks.isNotEmpty(),
                         colors = colors,
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else if (!isDownloading) {
-                    MessageList(
-                        messages = messages,
-                        colors = colors,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    // Chat mode: messages or empty state
+                    val userMessages = messages.filter { it.role != ChatMessage.Role.SYSTEM }
+                    if (userMessages.isEmpty()) {
+                        EmptyStateWithPrompts(
+                            onSelectPrompt = { text, isTask ->
+                                prefillText = text
+                                prefillIsTask = isTask
+                                if (isTask) isTaskMode = true
+                            },
+                            colors = colors,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        MessageList(
+                            messages = messages,
+                            colors = colors,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
 
                 // Download blocking overlay
@@ -186,6 +237,31 @@ fun ChatScreen(
                 }
             }
         }
+    }
+
+    // Monitor skill dialog
+    if (showMonitorSheet) {
+        MonitorDialog(
+            onDismiss = { showMonitorSheet = false },
+            onStart = { contact ->
+                showMonitorSheet = false
+                activatingSkill = "monitor"
+                onStartMonitor(contact)
+            },
+            colors = colors,
+        )
+    }
+
+    // Send Message skill dialog
+    if (showSendSheet) {
+        SendMessageDialog(
+            onDismiss = { showSendSheet = false },
+            onSend = { contact, app, message ->
+                showSendSheet = false
+                onSendDirectMessage(contact, app, message)
+            },
+            colors = colors,
+        )
     }
 }
 
@@ -454,6 +530,9 @@ private fun ToolGroup(message: ChatMessage, colors: PokeclawColors) {
 @Composable
 private fun ChatInputBar(
     isProcessing: Boolean,
+    isTaskMode: Boolean,
+    isLocalModel: Boolean,
+    onTaskModeChange: (Boolean) -> Unit,
     onSendChat: (String) -> Unit,
     onSendTask: (String) -> Unit,
     onAttach: () -> Unit,
@@ -463,14 +542,14 @@ private fun ChatInputBar(
     onPrefillConsumed: () -> Unit = {},
 ) {
     var text by remember { mutableStateOf("") }
-    var isTaskMode by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    val taskInputDisabled = isTaskMode && isLocalModel
 
     // Consume prefill from prompt chips
     LaunchedEffect(prefillText) {
         if (prefillText.isNotEmpty()) {
             text = prefillText
-            isTaskMode = prefillIsTask
+            onTaskModeChange(prefillIsTask)
             onPrefillConsumed()
         }
     }
@@ -478,7 +557,7 @@ private fun ChatInputBar(
     Column(modifier = Modifier.background(colors.surface)) {
         HorizontalDivider(color = colors.divider, thickness = 0.5.dp)
 
-        // Mode toggle tabs — Material Icons, no emoji
+        // Mode toggle tabs
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -489,7 +568,7 @@ private fun ChatInputBar(
                 label = "Chat",
                 icon = Icons.Outlined.ChatBubbleOutline,
                 selected = !isTaskMode,
-                onClick = { isTaskMode = false },
+                onClick = { onTaskModeChange(false) },
                 colors = colors,
                 modifier = Modifier.weight(1f),
             )
@@ -497,7 +576,7 @@ private fun ChatInputBar(
                 label = "Task",
                 icon = Icons.Outlined.TouchApp,
                 selected = isTaskMode,
-                onClick = { isTaskMode = true },
+                onClick = { onTaskModeChange(true) },
                 colors = colors,
                 modifier = Modifier.weight(1f),
             )
@@ -509,15 +588,17 @@ private fun ChatInputBar(
                 .padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Input — compact height like ChatGPT
             OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
+                value = if (taskInputDisabled) "" else text,
+                onValueChange = { if (!taskInputDisabled) text = it },
+                enabled = !taskInputDisabled,
                 placeholder = {
                     Text(
-                        if (isTaskMode) "Tell me what to do..." else "Ask anything...",
+                        if (taskInputDisabled) "Gemma is not smart enough for free-form tasks. Switch to a cloud LLM in Settings to unlock this."
+                        else if (isTaskMode) "Tell me what to do..."
+                        else "Ask anything...",
                         color = colors.textTertiary,
-                        fontSize = 14.sp,
+                        fontSize = if (taskInputDisabled) 11.sp else 14.sp,
                     )
                 },
                 modifier = Modifier
@@ -527,6 +608,8 @@ private fun ChatInputBar(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = colors.accent.copy(alpha = 0.4f),
                     unfocusedBorderColor = colors.inputBorder,
+                    disabledBorderColor = colors.inputBorder.copy(alpha = 0.3f),
+                    disabledTextColor = colors.textTertiary,
                     cursorColor = colors.accent,
                     focusedTextColor = colors.textPrimary,
                     unfocusedTextColor = colors.textPrimary,
@@ -537,10 +620,9 @@ private fun ChatInputBar(
 
             Spacer(Modifier.width(4.dp))
 
-            // Send button
             FloatingActionButton(
                 onClick = {
-                    if (text.isNotBlank()) {
+                    if (text.isNotBlank() && !taskInputDisabled) {
                         if (isTaskMode) {
                             onSendTask(text.trim())
                             text = ""
@@ -553,14 +635,14 @@ private fun ChatInputBar(
                     }
                 },
                 modifier = Modifier.size(36.dp),
-                containerColor = if (text.isBlank()) colors.accent.copy(alpha = 0.4f) else colors.accent,
+                containerColor = if (text.isBlank() || taskInputDisabled) colors.accent.copy(alpha = 0.2f) else colors.accent,
                 shape = CircleShape,
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
             ) {
                 Icon(
                     if (isTaskMode) Icons.Outlined.TouchApp else Icons.Default.ArrowUpward,
                     contentDescription = "Send",
-                    tint = Color.White,
+                    tint = if (taskInputDisabled) Color.White.copy(alpha = 0.3f) else Color.White,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -681,7 +763,7 @@ private fun EmptyStateWithPrompts(
         Prompt("What can you do?", false),
         Prompt("Summarize this for me", false),
         Prompt("Open WhatsApp and say hi to Mom", true),
-        Prompt("Monitor Mom's messages and auto-reply", true),
+        Prompt("Monitor Mom's messages on WhatsApp and auto-reply", true),
     )
 
     Column(
@@ -880,6 +962,499 @@ private fun SidebarContent(
         }
 
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+// ======================== TASK SKILLS PANEL ========================
+
+@Composable
+private fun TaskSkillsPanel(
+    taskMessages: List<ChatMessage>,
+    onMonitorClick: () -> Unit,
+    onSendClick: () -> Unit,
+    activatingSkill: String?,
+    monitorActive: Boolean,
+    colors: PokeclawColors,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Text(
+                "Skills",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.textPrimary,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
+
+        item {
+            SkillCard(
+                icon = Icons.Outlined.Visibility,
+                title = "Monitor Messages",
+                description = "Auto-reply to someone's messages in background",
+                onClick = onMonitorClick,
+                isActivating = activatingSkill == "monitor",
+                isActive = monitorActive,
+                colors = colors,
+            )
+        }
+
+        item {
+            SkillCard(
+                icon = Icons.Outlined.Send,
+                title = "Send Message",
+                description = "Send a message to someone via any messaging app",
+                onClick = onSendClick,
+                colors = colors,
+            )
+        }
+
+        // Task progress messages (if any)
+        if (taskMessages.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Recent",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.textTertiary,
+                )
+            }
+            items(taskMessages.size) { index ->
+                val msg = taskMessages[index]
+                if (msg.role == ChatMessage.Role.USER) {
+                    UserBubble(msg.content, colors)
+                } else {
+                    SystemMessage(msg.content, colors)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SkillCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+    isActivating: Boolean = false,
+    isActive: Boolean = false,
+    colors: PokeclawColors,
+) {
+    val activeOrange = Color(0xFFE8751A)
+    val borderColor = when {
+        isActive -> activeOrange
+        isActivating -> colors.accent
+        else -> colors.inputBorder
+    }
+    val cardBg = when {
+        isActive -> activeOrange.copy(alpha = 0.08f)
+        else -> colors.surface
+    }
+    val iconBg = when {
+        isActive -> activeOrange.copy(alpha = 0.15f)
+        else -> colors.accent.copy(alpha = 0.12f)
+    }
+    val iconTint = if (isActive) activeOrange else colors.accent
+
+    // Progress animation
+    val progress by animateFloatAsState(
+        targetValue = if (isActivating) 1f else 0f,
+        animationSpec = if (isActivating) tween(2000, easing = LinearEasing) else snap(),
+        label = "skillProgress",
+    )
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = cardBg,
+        border = androidx.compose.foundation.BorderStroke(if (isActive) 1.dp else 0.5.dp, borderColor),
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(iconBg, RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (isActive) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = activeOrange, modifier = Modifier.size(22.dp))
+                    } else {
+                        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
+                    }
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = if (isActive) activeOrange else colors.textPrimary)
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        if (isActive) "Running in background" else description,
+                        fontSize = 12.sp,
+                        color = if (isActive) activeOrange.copy(alpha = 0.7f) else colors.textTertiary,
+                        lineHeight = 16.sp,
+                    )
+                }
+                if (!isActive && !isActivating) {
+                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.textTertiary, modifier = Modifier.size(20.dp))
+                }
+            }
+
+            // Progress bar during activation
+            if (isActivating) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp),
+                    color = activeOrange,
+                    trackColor = colors.inputBorder,
+                )
+            }
+        }
+    }
+}
+
+// ======================== SKILL DIALOGS ========================
+
+@Composable
+private fun MonitorDialog(
+    onDismiss: () -> Unit,
+    onStart: (contact: String) -> Unit,
+    colors: PokeclawColors,
+) {
+    var contact by remember { mutableStateOf("") }
+    var selectedApp by remember { mutableStateOf("WhatsApp") }
+    var appMenuExpanded by remember { mutableStateOf(false) }
+    val apps = listOf("WhatsApp", "Telegram", "Messages")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.surface,
+        title = {
+            Text("Monitor Messages", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+        },
+        text = {
+            Column {
+                Text("With a smarter LLM, you can just type:", fontSize = 11.sp, color = colors.textTertiary)
+                Spacer(Modifier.height(2.dp))
+                Text("\"monitor Mom on WhatsApp\"", fontSize = 11.sp, color = colors.accent.copy(alpha = 0.7f))
+                Spacer(Modifier.height(16.dp))
+
+                // Fill-in-the-blank: "Monitor [___] on [WhatsApp ▾]"
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Monitor ", fontSize = 15.sp, color = colors.textPrimary)
+                    OutlinedTextField(
+                        value = contact,
+                        onValueChange = { contact = it },
+                        placeholder = { Text("name", color = colors.textTertiary, fontSize = 14.sp) },
+                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.accent,
+                            unfocusedBorderColor = colors.inputBorder,
+                            cursorColor = colors.accent,
+                            focusedTextColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary,
+                        ),
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("on ", fontSize = 15.sp, color = colors.textPrimary)
+                    Box {
+                        Surface(
+                            onClick = { appMenuExpanded = true },
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.Transparent,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, colors.inputBorder),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(selectedApp, fontSize = 14.sp, color = colors.textPrimary)
+                                Spacer(Modifier.width(4.dp))
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = colors.textTertiary, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = appMenuExpanded,
+                            onDismissRequest = { appMenuExpanded = false },
+                        ) {
+                            apps.forEach { app ->
+                                DropdownMenuItem(
+                                    text = { Text(app) },
+                                    onClick = { selectedApp = app; appMenuExpanded = false },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { if (contact.isNotBlank()) onStart(contact.trim()) },
+                enabled = contact.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.accent),
+                shape = RoundedCornerShape(10.dp),
+            ) {
+                Text("Start")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = colors.textSecondary)
+            }
+        },
+    )
+}
+
+@Composable
+private fun SendMessageDialog(
+    onDismiss: () -> Unit,
+    onSend: (contact: String, app: String, message: String) -> Unit,
+    colors: PokeclawColors,
+) {
+    var contact by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
+    var selectedApp by remember { mutableStateOf("WhatsApp") }
+    var appMenuExpanded by remember { mutableStateOf(false) }
+    val apps = listOf("WhatsApp", "Telegram", "Messages")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.surface,
+        title = {
+            Text("Send Message", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+        },
+        text = {
+            Column {
+                Text("With a smarter LLM, you can just type:", fontSize = 11.sp, color = colors.textTertiary)
+                Spacer(Modifier.height(2.dp))
+                Text("\"send hi to Mom on WhatsApp\"", fontSize = 11.sp, color = colors.accent.copy(alpha = 0.7f))
+                Spacer(Modifier.height(16.dp))
+
+                // Fill-in-the-blank: "Send [___] to [___] on [WhatsApp ▾]"
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Send ", fontSize = 15.sp, color = colors.textPrimary)
+                    Text("\"", fontSize = 15.sp, color = colors.textTertiary)
+                    OutlinedTextField(
+                        value = message,
+                        onValueChange = { message = it },
+                        placeholder = { Text("message", color = colors.textTertiary, fontSize = 14.sp) },
+                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.accent,
+                            unfocusedBorderColor = colors.inputBorder,
+                            cursorColor = colors.accent,
+                            focusedTextColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary,
+                        ),
+                    )
+                    Text("\"", fontSize = 15.sp, color = colors.textTertiary)
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("to ", fontSize = 15.sp, color = colors.textPrimary)
+                    OutlinedTextField(
+                        value = contact,
+                        onValueChange = { contact = it },
+                        placeholder = { Text("name", color = colors.textTertiary, fontSize = 14.sp) },
+                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.accent,
+                            unfocusedBorderColor = colors.inputBorder,
+                            cursorColor = colors.accent,
+                            focusedTextColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary,
+                        ),
+                    )
+                    Text(" on ", fontSize = 15.sp, color = colors.textPrimary)
+                    Box {
+                        Surface(
+                            onClick = { appMenuExpanded = true },
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.Transparent,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, colors.inputBorder),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(selectedApp, fontSize = 13.sp, color = colors.textPrimary)
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = colors.textTertiary, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = appMenuExpanded,
+                            onDismissRequest = { appMenuExpanded = false },
+                        ) {
+                            apps.forEach { app ->
+                                DropdownMenuItem(
+                                    text = { Text(app) },
+                                    onClick = { selectedApp = app; appMenuExpanded = false },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { if (contact.isNotBlank() && message.isNotBlank()) onSend(contact.trim(), selectedApp, message.trim()) },
+                enabled = contact.isNotBlank() && message.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.accent),
+                shape = RoundedCornerShape(10.dp),
+            ) {
+                Text("Send")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = colors.textSecondary)
+            }
+        },
+    )
+}
+
+// ======================== ACTIVE TASK BAR ========================
+
+@Composable
+private fun ActiveTaskBar(
+    tasks: List<String>,
+    onStopTask: (String) -> Unit,
+    onStopAll: () -> Unit,
+    colors: PokeclawColors,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surface)
+    ) {
+        // Collapsed bar — always visible when tasks exist
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Green dot
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(
+                        color = androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                    )
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = if (tasks.size == 1) "Monitoring: ${tasks[0]}" else "${tasks.size} tasks running",
+                color = colors.textPrimary,
+                fontSize = 14.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = if (expanded) "▴" else "▾",
+                color = colors.textSecondary,
+                fontSize = 14.sp,
+            )
+        }
+
+        // Expanded — show each task with stop button
+        if (expanded) {
+            Divider(color = colors.textSecondary.copy(alpha = 0.2f), thickness = 0.5.dp)
+            tasks.forEach { task ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(
+                                color = androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                                shape = androidx.compose.foundation.shape.CircleShape,
+                            )
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = task,
+                        color = colors.textPrimary,
+                        fontSize = 13.sp,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "Stop",
+                        color = androidx.compose.ui.graphics.Color(0xFFF44336),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .clickable { onStopTask(task) }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+            if (tasks.size > 1) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    Text(
+                        text = "Stop All",
+                        color = androidx.compose.ui.graphics.Color(0xFFF44336),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .clickable { onStopAll() }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+        }
     }
 }
 

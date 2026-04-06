@@ -85,6 +85,16 @@ public class AutoReplyManager {
 
     public boolean isEnabled() { return enabled; }
 
+    public Set<String> getMonitoredContacts() {
+        return new HashSet<>(monitoredContacts);
+    }
+
+    public void stopAll() {
+        enabled = false;
+        monitoredContacts.clear();
+        XLog.i(TAG, "Auto-reply stopped and all contacts cleared");
+    }
+
     public void addContact(String name) {
         monitoredContacts.add(name.toLowerCase());
         XLog.i(TAG, "Added contact: " + name);

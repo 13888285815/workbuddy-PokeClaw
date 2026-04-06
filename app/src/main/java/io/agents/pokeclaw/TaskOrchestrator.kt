@@ -139,8 +139,6 @@ class TaskOrchestrator(
             }
         }
 
-        ClawAccessibilityService.getInstance()?.pressHome()
-
         FloatingCircleManager.showTaskNotify(task, channel)
         ForegroundService.updateTaskStatus(ClawApplication.instance, "Warming up AI...")
 

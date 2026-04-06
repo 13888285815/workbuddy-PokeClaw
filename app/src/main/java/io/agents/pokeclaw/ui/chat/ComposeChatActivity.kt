@@ -90,6 +90,20 @@ class ComposeChatActivity : ComponentActivity() {
         val composeColors = with(ThemeManager) { themeColors.toComposeColors() }
 
         setContent {
+            // Poll AutoReplyManager state every 2 seconds
+            val autoReplyManager = io.agents.pokeclaw.service.AutoReplyManager.getInstance()
+            var activeTasks by remember { mutableStateOf(listOf<String>()) }
+            LaunchedEffect(Unit) {
+                while (true) {
+                    activeTasks = if (autoReplyManager.isEnabled) {
+                        autoReplyManager.monitoredContacts.map { it.replaceFirstChar { c -> c.uppercase() } }
+                    } else {
+                        emptyList()
+                    }
+                    kotlinx.coroutines.delay(2000)
+                }
+            }
+
             ChatScreen(
                 messages = _messages.toList(),
                 modelStatus = _modelStatus.value,
@@ -97,8 +111,13 @@ class ComposeChatActivity : ComponentActivity() {
                 isProcessing = _isProcessing.value,
                 isDownloading = _isDownloading.value,
                 downloadProgress = _downloadProgress.value,
+                isLocalModel = KVUtils.getLlmProvider() == "LOCAL",
                 onSendChat = { sendChat(it) },
                 onSendTask = { sendTask(it) },
+                onStartMonitor = { contact -> handleMonitorTask("monitor $contact on WhatsApp") },
+                onSendDirectMessage = { contact, app, message ->
+                    sendTask("send \"$message\" to $contact on $app")
+                },
                 onNewChat = { newChat() },
                 onOpenSettings = { startActivity(Intent(this, SettingsActivity::class.java)) },
                 onOpenModels = { startActivity(Intent(this, LlmConfigActivity::class.java)) },
@@ -106,6 +125,18 @@ class ComposeChatActivity : ComponentActivity() {
                 onAttach = { Toast.makeText(this, "Image upload coming soon", Toast.LENGTH_SHORT).show() },
                 conversations = _conversations.toList(),
                 onSelectConversation = { loadConversation(it) },
+                activeTasks = activeTasks,
+                onStopTask = { contact ->
+                    autoReplyManager.removeContact(contact.lowercase())
+                    if (autoReplyManager.monitoredContacts.isEmpty()) {
+                        autoReplyManager.isEnabled = false
+                    }
+                    Toast.makeText(this, "Stopped monitoring $contact", Toast.LENGTH_SHORT).show()
+                },
+                onStopAllTasks = {
+                    autoReplyManager.stopAll()
+                    Toast.makeText(this, "All monitoring stopped", Toast.LENGTH_SHORT).show()
+                },
                 colors = composeColors,
             )
         }
@@ -405,6 +436,14 @@ class ComposeChatActivity : ComponentActivity() {
         // Reset stuck processing state from previous task
         _isProcessing.value = false
 
+        // Java keyword routing: monitor/auto-reply tasks bypass LLM entirely
+        val lower = text.lowercase()
+        if (lower.contains("monitor") || lower.contains("auto-reply") || lower.contains("auto reply")
+            || lower.contains("watch") && (lower.contains("message") || lower.contains("reply"))) {
+            handleMonitorTask(text)
+            return
+        }
+
         if (!KVUtils.hasLlmConfig()) {
             Toast.makeText(this, "Configure LLM in Settings first", Toast.LENGTH_LONG).show()
             return
@@ -433,6 +472,25 @@ class ComposeChatActivity : ComponentActivity() {
                     XLog.i(TAG, "sendTask: task done via progress callback, scheduling chat engine reload")
                     _isProcessing.value = false
                     appViewModel.taskOrchestrator.taskProgressCallback = null
+
+                    // If auto-reply was just enabled, show confirmation and go to home
+                    // so notifications can fire (WhatsApp won't notify while in foreground)
+                    val arm = io.agents.pokeclaw.service.AutoReplyManager.getInstance()
+                    if (msg.startsWith("Task completed") && arm.isEnabled) {
+                        val contacts = arm.monitoredContacts.joinToString(", ") { it.replaceFirstChar { c -> c.uppercase() } }
+                        addSystem("✓ Auto-reply is now active for $contacts.\nMonitoring in background — you can stop anytime from the bar above.")
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            XLog.i(TAG, "sendTask: auto-reply active, going to home for notifications")
+                            try {
+                                ClawAccessibilityService.getInstance()?.performGlobalAction(
+                                    android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
+                                )
+                            } catch (e: Exception) {
+                                XLog.w(TAG, "sendTask: pressHome failed", e)
+                            }
+                        }, 3000)
+                    }
+
                     Handler(Looper.getMainLooper()).postDelayed({
                         XLog.i(TAG, "sendTask: reloading chat engine after task engine released")
                         try {
@@ -534,6 +592,72 @@ class ComposeChatActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    // ==================== MONITOR (Java routing, no LLM) ====================
+
+    /**
+     * Handle monitor/auto-reply tasks directly via Java — no LLM needed.
+     * Extracts contact name from user input, enables AutoReplyManager,
+     * shows confirmation, then goes to home so notifications can fire.
+     */
+    private fun handleMonitorTask(text: String) {
+        val contact = extractContactName(text)
+        if (contact.isEmpty()) {
+            addUser("🚀 $text")
+            addSystem("Could not figure out who to monitor. Try: \"Monitor Mom on WhatsApp\"")
+            return
+        }
+
+        addUser("🚀 $text")
+        _isProcessing.value = true
+        addSystem("Setting up auto-reply for $contact...")
+
+        val arm = io.agents.pokeclaw.service.AutoReplyManager.getInstance()
+        arm.addContact(contact)
+        arm.setEnabled(true)
+        XLog.i(TAG, "handleMonitorTask: enabled auto-reply for '$contact'")
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            _isProcessing.value = false
+            addSystem("✓ Auto-reply is now active for $contact.\nMonitoring in background — you can stop anytime from the bar above.")
+
+            // Go to home after 3s so user sees the confirmation first.
+            // WhatsApp won't fire notifications while in foreground, so we must leave.
+            Handler(Looper.getMainLooper()).postDelayed({
+                XLog.i(TAG, "handleMonitorTask: going to home for notifications")
+                try {
+                    ClawAccessibilityService.getInstance()?.performGlobalAction(
+                        android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
+                    )
+                } catch (e: Exception) {
+                    XLog.w(TAG, "handleMonitorTask: pressHome failed", e)
+                }
+            }, 3000)
+        }, 1500)
+    }
+
+    /**
+     * Extract contact name from monitor task text.
+     * Handles: "monitor Mom on WhatsApp", "auto-reply to Mom's messages", "watch Mom", etc.
+     */
+    private fun extractContactName(text: String): String {
+        val lower = text.lowercase()
+        // Remove known keywords to isolate the contact name
+        var cleaned = lower
+        val removeWords = listOf(
+            "monitor", "auto-reply", "auto reply", "watch",
+            "on whatsapp", "on telegram", "on messages", "on wechat", "on line",
+            "messages", "message", "'s", "'s", "and", "for", "to", "from",
+            "please", "can you", "start", "enable", "begin", "help me",
+        )
+        for (word in removeWords) {
+            cleaned = cleaned.replace(word, " ")
+        }
+        // Collapse whitespace and trim
+        cleaned = cleaned.replace(Regex("\\s+"), " ").trim()
+        // What's left should be the contact name
+        return if (cleaned.isNotEmpty()) cleaned.replaceFirstChar { it.uppercase() } else ""
     }
 
     // ==================== HELPERS ====================
