@@ -8,15 +8,27 @@
 
 # PokeClaw (PocketClaw) - A Pocket Versoin Of OpenClaw
 
-Gemma 4 has only been out for a few days.  
+Gemma 4 launched days ago.  
 
 Most people ship demos. I wanted to know if it could actually drive a phone.
 
-So I built one.
+So I pulled two all-nighters and built it.
 
 As far as I know, this is the first working app built on Gemma 4 that can autonomously control an Android phone.
 
 The entire pipeline is a closed loop inside your device. The model reads the screen, picks a tool, executes, reads the result, loops. Nothing leaves.
+
+
+**AI controls your phone. And it never leaves your phone.**
+
+```
+Everyone else:  Phone → Internet → Cloud API → Internet → Phone
+                       💳 API key required. Monthly bill attached.
+
+PokeClaw:       Phone → LLM → Phone
+                       That's it. No internet. No API key. No bill.
+```
+
 
 https://github.com/user-attachments/assets/c713e227-7581-4475-acd4-0480128c8ec8
 
@@ -39,21 +51,7 @@ https://github.com/user-attachments/assets/18d49148-c744-46a5-98a2-0f8320f00d19
 
 
 
-Gemma 4 launched days ago.
 
-I pulled two all-nighters and built the first working app that uses it to autonomously control an Android phone.
-
-**AI controls your phone. And it never leaves your phone.**
-
-```
-Everyone else:  Phone → Internet → Cloud API → Internet → Phone
-                       💳 API key required. Monthly bill attached.
-
-PokeClaw:       Phone → LLM → Phone
-                       That's it. No internet. No API key. No bill.
-```
-
-The first working app that uses Gemma 4 to autonomously control an Android phone. The entire pipeline is a closed loop inside your device. The model reads the screen, picks a tool, executes, reads the result, loops. Nothing leaves.
 
 ## The Story
 
