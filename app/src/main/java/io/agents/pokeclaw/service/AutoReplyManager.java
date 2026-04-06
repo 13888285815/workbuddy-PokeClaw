@@ -203,31 +203,60 @@ public class AutoReplyManager {
                 svc.openApp(packageName);
                 Thread.sleep(2000);
 
-                // Find and tap the contact to open their chatroom
+                // Navigate to the contact's chatroom
                 AccessibilityNodeInfo root = svc.getRootInActiveWindow();
                 if (root != null) {
-                    // Check if already in the right chat (contact name in toolbar)
+                    // Check if already in the right chatroom:
+                    // 1) contact name in toolbar AND 2) message input field exists
                     boolean inChat = false;
+                    boolean hasContactInToolbar = false;
                     List<AccessibilityNodeInfo> topNodes = new ArrayList<>();
                     collectTopBarNodes(root, topNodes);
                     for (AccessibilityNodeInfo node : topNodes) {
                         CharSequence t = node.getText();
                         if (t != null && t.toString().toLowerCase().contains(finalContact.toLowerCase())) {
-                            inChat = true;
+                            hasContactInToolbar = true;
                             break;
+                        }
+                    }
+                    if (hasContactInToolbar) {
+                        // Also check for EditText (message input) — contact info page has
+                        // the name in toolbar too but no EditText
+                        List<AccessibilityNodeInfo> editTexts = new ArrayList<>();
+                        collectEditTexts(root, editTexts);
+                        inChat = !editTexts.isEmpty();
+                        if (!inChat) {
+                            // We're on contact info or similar — press back to get to chat
+                            XLog.i(TAG, "Contact name in toolbar but no input field — pressing back");
+                            svc.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);
+                            Thread.sleep(1500);
+                            root = svc.getRootInActiveWindow();
+                            // Re-check
+                            if (root != null) {
+                                editTexts.clear();
+                                collectEditTexts(root, editTexts);
+                                inChat = !editTexts.isEmpty();
+                            }
                         }
                     }
 
                     if (!inChat) {
-                        // Not in chat — find contact in chat list and tap
-                        List<AccessibilityNodeInfo> matches = new ArrayList<>();
-                        findNodesContainingText(root, finalContact.toLowerCase(), matches);
-                        if (!matches.isEmpty()) {
-                            svc.clickNode(matches.get(0));
-                            XLog.i(TAG, "Tapped contact: " + finalContact);
-                            Thread.sleep(2000);
-                        } else {
-                            XLog.w(TAG, "Could not find " + finalContact + " in chat list");
+                        // Not in chat — go back to chat list, find contact, tap
+                        svc.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);
+                        Thread.sleep(1000);
+                        svc.openApp(packageName);
+                        Thread.sleep(2000);
+                        root = svc.getRootInActiveWindow();
+                        if (root != null) {
+                            List<AccessibilityNodeInfo> matches = new ArrayList<>();
+                            findNodesContainingText(root, finalContact.toLowerCase(), matches);
+                            if (!matches.isEmpty()) {
+                                svc.clickNode(matches.get(0));
+                                XLog.i(TAG, "Tapped contact: " + finalContact);
+                                Thread.sleep(2000);
+                            } else {
+                                XLog.w(TAG, "Could not find " + finalContact + " in chat list");
+                            }
                         }
                     } else {
                         XLog.i(TAG, "Already in " + finalContact + "'s chat");

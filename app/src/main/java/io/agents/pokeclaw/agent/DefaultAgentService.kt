@@ -38,9 +38,9 @@ class DefaultAgentService : AgentService {
         private const val TAG = "AgentService"
         private val GSON = Gson()
 
-        /** LLM API 调用失败时的最大重试次数 */
+        /** Maximum number of retries on LLM API call failure */
         private const val MAX_API_RETRIES = 3
-        /** 死循环检测：滑动窗口大小 */
+        /** Dead-loop detection: sliding window size */
         private const val LOOP_DETECT_WINDOW = 4
 
         /**
@@ -59,7 +59,7 @@ class DefaultAgentService : AgentService {
         /** ms to wait for UI to settle before capturing screen after an action */
         private const val SCREEN_SETTLE_MS = 500L
 
-        /** 是否将网络请求/响应原始数据输出到沙盒缓存文件，方便调试 */
+        /** Whether to write raw network request/response data to sandbox cache files for debugging */
         @JvmField
         var FILE_LOGGING_ENABLED = false
         @JvmField
@@ -131,7 +131,7 @@ class DefaultAgentService : AgentService {
         }
     }
 
-    // ==================== 环境预检 ====================
+    // ==================== Pre-flight Check ====================
 
     private fun preCheck(): String? {
         if (ClawAccessibilityService.getInstance() == null) {
@@ -140,15 +140,15 @@ class DefaultAgentService : AgentService {
         return null
     }
 
-    // ==================== 设备上下文 ====================
+    // ==================== Device Context ====================
 
     private fun buildDeviceContext(): String {
         val app = ClawApplication.instance
         val sb = StringBuilder()
-        sb.append("\n\n## 设备信息\n")
-        sb.append("- 品牌: ").append(Build.BRAND).append("\n")
-        sb.append("- 型号: ").append(Build.MODEL).append("\n")
-        sb.append("- Android 版本: ").append(Build.VERSION.RELEASE)
+        sb.append("\n\n## Device Info\n")
+        sb.append("- Brand: ").append(Build.BRAND).append("\n")
+        sb.append("- Model: ").append(Build.MODEL).append("\n")
+        sb.append("- Android Version: ").append(Build.VERSION.RELEASE)
             .append(" (API ").append(Build.VERSION.SDK_INT).append(")\n")
 
         try {
@@ -157,26 +157,26 @@ class DefaultAgentService : AgentService {
             val dm = DisplayMetrics()
             @Suppress("DEPRECATION")
             wm.defaultDisplay.getRealMetrics(dm)
-            sb.append("- 屏幕分辨率: ").append(dm.widthPixels).append("x").append(dm.heightPixels).append("\n")
+            sb.append("- Screen Resolution: ").append(dm.widthPixels).append("x").append(dm.heightPixels).append("\n")
         } catch (e: Exception) {
             XLog.w(TAG, "Failed to get display metrics", e)
         }
 
-        sb.append("- 已注册工具数: ").append(ToolRegistry.getAllTools().size).append("\n")
+        sb.append("- Registered Tools: ").append(ToolRegistry.getAllTools().size).append("\n")
 
         val appName = try {
             val appInfo = app.packageManager.getApplicationInfo(app.packageName, 0)
             app.packageManager.getApplicationLabel(appInfo).toString()
         } catch (_: Exception) { "CoPaw" }
-        sb.append("\n## 本应用信息\n")
-        sb.append("- 应用名: ").append(appName).append("\n")
-        sb.append("- 包名: ").append(app.packageName).append("\n")
-        sb.append("- 当用户提到'自己/本应用/这个应用'时，指的就是上述应用\n")
+        sb.append("\n## This App Info\n")
+        sb.append("- App Name: ").append(appName).append("\n")
+        sb.append("- Package Name: ").append(app.packageName).append("\n")
+        sb.append("- When the user refers to 'this app' or 'the app', they mean the app above.\n")
 
         return sb.toString()
     }
 
-    // ==================== LLM 调用（带重试） ====================
+    // ==================== LLM Call (with retry) ====================
 
     private fun chatWithRetry(messages: List<ChatMessage>, callback: AgentCallback, iteration: Int): LlmResponse {
         var lastException: Exception? = null
@@ -199,7 +199,7 @@ class DefaultAgentService : AgentService {
             } catch (e: Exception) {
                 lastException = e
                 val msg = e.message ?: ""
-                // Token 耗尽或认证失败不重试
+                // Do not retry on token exhaustion or auth failure
                 if (msg.contains("401") || msg.contains("403") || msg.contains("insufficient")) {
                     throw e
                 }
@@ -216,7 +216,7 @@ class DefaultAgentService : AgentService {
         throw lastException!!
     }
 
-    // ==================== 死循环检测 ====================
+    // ==================== Dead Loop Detection ====================
 
     private data class RoundFingerprint(val screenHash: Int, val toolCall: String)
 
@@ -226,28 +226,28 @@ class DefaultAgentService : AgentService {
         return history.all { it == first }
     }
 
-    // ==================== 上下文压缩 ====================
+    // ==================== Context Compression ====================
 
-    /** 保护区：最近 N 轮完整保留 */
+    /** Protected zone: keep the most recent N rounds intact */
     private val KEEP_RECENT_ROUNDS = 3
 
-    /** 大输出观察类工具 → 压缩后占位符 */
+    /** Large-output observation tools → compressed placeholder */
     private val OBSERVATION_PLACEHOLDERS = mapOf(
-        "get_screen_info" to "[屏幕信息已省略]",
-        "take_screenshot" to "[截图结果已省略]",
-        "find_node_info" to "[节点查找结果已省略]",
-        "get_installed_apps" to "[应用列表已省略]",
-        "scroll_to_find" to "[滚动查找结果已省略]"
+        "get_screen_info" to "[screen info omitted]",
+        "take_screenshot" to "[screenshot result omitted]",
+        "find_node_info" to "[node find result omitted]",
+        "get_installed_apps" to "[app list omitted]",
+        "scroll_to_find" to "[scroll find result omitted]"
     )
 
     /**
-     * 发送前压缩历史消息，节省 input token：
-     * - get_screen_info：全局只保留最新一条完整结果
-     * - 保护区（最近 KEEP_RECENT_ROUNDS 轮）：完整保留
-     * - 保护区外：AI thinking 不动，tool result 压缩为一行摘要
+     * Compress history messages before sending to save input tokens:
+     * - get_screen_info: keep only the latest complete result globally
+     * - Protected zone (most recent KEEP_RECENT_ROUNDS rounds): keep intact
+     * - Outside protected zone: keep AI thinking as-is, compress tool results to a one-line summary
      */
     private fun compressHistoryForSend(messages: MutableList<ChatMessage>) {
-        // 压缩前统计总字符数
+        // Count total characters before compression
         val charsBefore = messages.sumOf { msg ->
             when (msg) {
                 is AiMessage -> (msg.text()?.length ?: 0) + (msg.toolExecutionRequests()?.sumOf { it.arguments()?.length ?: 0 } ?: 0)
@@ -259,7 +259,7 @@ class DefaultAgentService : AgentService {
         }
         val msgCountBefore = messages.size
 
-        // 0. get_screen_info 特殊处理：无视分级，全局只保留最新一条完整结果
+        // 0. Special handling for get_screen_info: regardless of tier, keep only the latest complete result globally
         val screenPlaceholder = OBSERVATION_PLACEHOLDERS["get_screen_info"]!!
         val lastScreenIdx = messages.indexOfLast {
             it is ToolExecutionResultMessage && it.toolName() == "get_screen_info"
@@ -275,7 +275,7 @@ class DefaultAgentService : AgentService {
             }
         }
 
-        // 1. 找出所有 AiMessage 的索引，每个代表一轮
+        // 1. Find indices of all AiMessages; each represents one round
         val aiIndices = messages.indices.filter { messages[it] is AiMessage }
         if (aiIndices.size <= KEEP_RECENT_ROUNDS) return
 
@@ -283,11 +283,11 @@ class DefaultAgentService : AgentService {
 
         for (roundIdx in aiIndices.indices) {
             val roundFromEnd = totalRounds - roundIdx
-            if (roundFromEnd <= KEEP_RECENT_ROUNDS) break // 保护区
+            if (roundFromEnd <= KEEP_RECENT_ROUNDS) break // protected zone
 
             val aiIndex = aiIndices[roundIdx]
 
-            // 收集本轮的 ToolExecutionResultMessage 索引
+            // Collect ToolExecutionResultMessage indices for this round
             var j = aiIndex + 1
             while (j < messages.size && messages[j] is ToolExecutionResultMessage) {
                 compressToolResultMessage(messages, j)
@@ -295,7 +295,7 @@ class DefaultAgentService : AgentService {
             }
         }
 
-        // 压缩后统计
+        // Count total characters after compression
         val charsAfter = messages.sumOf { msg ->
             when (msg) {
                 is AiMessage -> (msg.text()?.length ?: 0) + (msg.toolExecutionRequests()?.sumOf { it.arguments()?.length ?: 0 } ?: 0)
@@ -307,15 +307,15 @@ class DefaultAgentService : AgentService {
         }
         val saved = charsBefore - charsAfter
         if (saved > 0) {
-            XLog.i(TAG, "上下文压缩: ${charsBefore}→${charsAfter}字符, 节省${saved}字符(${saved * 100 / charsBefore}%), 轮数=${aiIndices.size}")
+            XLog.i(TAG, "Context compressed: ${charsBefore}→${charsAfter} chars, saved ${saved} chars (${saved * 100 / charsBefore}%), rounds=${aiIndices.size}")
         }
     }
 
-    /** 压缩 Tool Result：观察类工具用占位符，其他工具截取摘要 */
+    /** Compress Tool Result: use placeholder for observation tools, truncate summary for others */
     private fun compressToolResultMessage(messages: MutableList<ChatMessage>, index: Int) {
         val msg = messages[index] as ToolExecutionResultMessage
         val text = msg.text()
-        if (text.length <= 100) return // 已足够简短，无需压缩
+        if (text.length <= 100) return // already short enough, no need to compress
 
         val placeholder = OBSERVATION_PLACEHOLDERS[msg.toolName()]
         if (placeholder != null) {
@@ -323,12 +323,12 @@ class DefaultAgentService : AgentService {
             return
         }
 
-        // 其他工具：解析 JSON 提取摘要
+        // Other tools: parse JSON to extract a summary
         val compressed = summarizeToolResult(text)
         messages[index] = ToolExecutionResultMessage.from(msg.id(), msg.toolName(), compressed)
     }
 
-    /** 将 ToolResult JSON 压缩为一行摘要 */
+    /** Compress ToolResult JSON into a one-line summary */
     private fun summarizeToolResult(resultJson: String): String {
         return try {
             val mapType = object : TypeToken<Map<String, Any?>>() {}.type
@@ -346,16 +346,16 @@ class DefaultAgentService : AgentService {
         }
     }
 
-    // ==================== 主执行循环 ====================
+    // ==================== Main Execution Loop ====================
 
     private fun runAgentLoop(userPrompt: String, callback: AgentCallback) {
-        // 环境预检
+        // Pre-flight check
         preCheck()?.let {
             callback.onError(0, RuntimeException(it), 0)
             return
         }
 
-        // 构建 System Prompt（原始 + 设备上下文）
+        // Build System Prompt (original + device context)
         val fullSystemPrompt = config.systemPrompt + buildDeviceContext()
 
         val messages = mutableListOf<ChatMessage>()
@@ -395,10 +395,10 @@ class DefaultAgentService : AgentService {
             iterations++
             callback.onLoopStart(iterations)
 
-            // 发送前分级压缩历史消息，节省 token
+            // Compress history messages before sending to save tokens
             compressHistoryForSend(messages)
 
-            // LLM 调用（带重试）
+            // LLM call (with retry)
             val llmResponse: LlmResponse
             try {
                 llmResponse = chatWithRetry(messages, callback, iterations)
@@ -408,14 +408,14 @@ class DefaultAgentService : AgentService {
                 return
             }
 
-            // 累加 token 用量
+            // Accumulate token usage
             llmResponse.tokenUsage?.totalTokenCount()?.let { totalTokens += it }
 
             // DEBUG: log raw LLM response for tool calling diagnosis
             XLog.i(TAG, "runAgentLoop iter=$iterations response.text=${llmResponse.text?.take(500)}")
             XLog.i(TAG, "runAgentLoop iter=$iterations hasToolCalls=${llmResponse.hasToolExecutionRequests()} toolCallCount=${llmResponse.toolExecutionRequests?.size ?: 0}")
 
-            // 将 AI 消息添加到历史（需要构造 AiMessage）
+            // Add AI message to history (must construct AiMessage)
             val aiMessage = if (llmResponse.hasToolExecutionRequests()) {
                 if (llmResponse.text.isNullOrEmpty()) {
                     AiMessage.from(llmResponse.toolExecutionRequests)
@@ -427,12 +427,12 @@ class DefaultAgentService : AgentService {
             }
             messages.add(aiMessage)
 
-            // 非流式模式下推送思考内容
+            // Push thinking content in non-streaming mode
             if (!config.streaming && !llmResponse.text.isNullOrEmpty()) {
                 callback.onContent(iterations, llmResponse.text)
             }
 
-            // 如果没有工具调用
+            // No tool calls in this response
             if (!llmResponse.hasToolExecutionRequests()) {
                 val responseText = llmResponse.text ?: ""
                 // Only finish if LLM explicitly says done, or we've been going too long
@@ -446,7 +446,7 @@ class DefaultAgentService : AgentService {
                 continue
             }
 
-            // 执行工具调用
+            // Execute tool calls
             for (toolRequest in llmResponse.toolExecutionRequests) {
                 if (cancelled.get()) {
                     callback.onComplete(iterations, ClawApplication.instance.getString(R.string.agent_task_cancel), totalTokens)
@@ -458,7 +458,7 @@ class DefaultAgentService : AgentService {
                 val toolArgs = toolRequest.arguments() ?: "{}"
                 callback.onToolCall(iterations, toolName, displayName, toolArgs)
 
-                // 解析参数
+                // Parse parameters
                 val mapType = object : TypeToken<Map<String, Any>>() {}.type
                 var params: Map<String, Any>? = try {
                     GSON.fromJson(toolArgs, mapType)
@@ -471,14 +471,14 @@ class DefaultAgentService : AgentService {
                 val paramsString = if (params.isEmpty()) "" else params.toString()
                 callback.onToolResult(iterations, toolName, displayName, paramsString, result)
 
-                // 检测到系统弹窗阻塞 → 截图通知用户并结束任务
+                // System dialog blocking detected → notify user and stop task
                 if (!result.isSuccess && result.error == GetScreenInfoTool.SYSTEM_DIALOG_BLOCKED) {
                     XLog.w(TAG, "System dialog blocked, notifying user and stopping task")
                     callback.onSystemDialogBlocked(iterations, totalTokens)
                     return
                 }
 
-                // finish 工具 → 任务完成
+                // finish tool → task complete
                 if (toolName == "finish" && result.isSuccess) {
                     val finishData = result.data
                     callback.onComplete(iterations, finishData ?: ClawApplication.instance.getString(R.string.agent_task_completed), totalTokens)
@@ -512,7 +512,7 @@ class DefaultAgentService : AgentService {
                         GSON.toJson(result)
                     }
                 } else {
-                    // 记录指纹用于死循环检测（非 action tools 路径）
+                    // Record fingerprint for dead-loop detection (non-action tools path)
                     if (toolName == "get_screen_info" && result.isSuccess && result.data != null) {
                         lastScreenHash = result.data.hashCode()
                     }
@@ -529,24 +529,24 @@ class DefaultAgentService : AgentService {
                     if (loopHistory.size > LOOP_DETECT_WINDOW) loopHistory.removeFirst()
                 }
 
-                // 添加工具结果到消息
+                // Add tool result to messages
                 messages.add(ToolExecutionResultMessage.from(toolRequest, combinedResultData))
                 XLog.d(TAG, "displayName:$displayName toolName:$toolName")
             }
 
-            // 死循环检测
+            // Dead loop detection
             if (isStuckInLoop(loopHistory)) {
                 XLog.w(TAG, "Dead loop detected at iteration $iterations")
                 messages.add(
                     UserMessage.from(
-                        "[系统提示] 检测到你连续多轮执行了相同的操作且屏幕没有变化，你可能陷入了死循环。" +
-                        "请尝试完全不同的方法：按 system_key(key=\"back\") 回退、滑动页面寻找目标、或重新打开 App。" +
-                        "如果确实无法完成任务，请调用 finish 说明原因。"
+                        "[System Notice] You have performed the same action repeatedly for multiple rounds with no screen change. You may be stuck in a dead loop. " +
+                        "Please try a completely different approach: press system_key(key=\"back\") to go back, swipe to search for the target, or reopen the app. " +
+                        "If the task truly cannot be completed, call finish and explain why."
                     )
                 )
                 loopHistory.clear()
             }
-            XLog.d(TAG, "轮数:$iterations all=$totalTokens 本轮=${llmResponse.tokenUsage?.totalTokenCount()}")
+            XLog.d(TAG, "Round:$iterations total=$totalTokens thisRound=${llmResponse.tokenUsage?.totalTokenCount()}")
         }
 
         if (cancelled.get()) {

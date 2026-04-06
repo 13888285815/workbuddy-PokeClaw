@@ -8,16 +8,16 @@ import com.blankj.utilcode.util.ScreenUtils
 abstract class BaseTool {
 
     companion object {
-        /** 工具描述语言，设为 true 使用中文描述，false 使用英文 */
+        /** Tool description language: true = Chinese, false = English */
         @JvmField
         var useChineseDescription: Boolean = true
 
-        /** wait_after 参数的最大值（毫秒） */
+        /** Maximum value for the wait_after parameter (milliseconds) */
         private const val MAX_WAIT_AFTER_MS = 10000L
 
         /**
-         * 所有工具共用的 wait_after 参数定义。
-         * 由 getParametersWithWaitAfter() 自动追加到每个工具的参数列表末尾。
+         * Shared wait_after parameter definition used by all tools.
+         * Automatically appended to the end of each tool's parameter list by getParametersWithWaitAfter().
          */
         @JvmStatic
         val WAIT_AFTER_PARAM = ToolParameter(
@@ -33,12 +33,12 @@ abstract class BaseTool {
     abstract fun execute(params: @JvmSuppressWildcards Map<String, Any>): ToolResult
 
     /**
-     * 返回工具参数列表 + wait_after 通用参数。
-     * 供 ToolBridge 注册工具规格时使用。
+     * Returns the tool parameter list plus the shared wait_after parameter.
+     * Used by ToolBridge when registering tool specifications.
      */
     fun getParametersWithWaitAfter(): List<ToolParameter> {
         val params = getParameters().toMutableList()
-        // 不给 wait / finish / get_screen_info 等观察类工具加 wait_after
+        // Do not add wait_after to observation tools like wait / finish / get_screen_info
         if (getName() !in listOf("wait", "finish", "get_screen_info", "take_screenshot", "get_installed_apps", "find_node_info", "scroll_to_find", "list_scheduled_tasks", "schedule_task", "cancel_scheduled_task")) {
             params.add(WAIT_AFTER_PARAM)
         }
@@ -46,12 +46,12 @@ abstract class BaseTool {
     }
 
     /**
-     * 执行工具并处理 wait_after 等待。
-     * 供 ToolRegistry.executeTool() 调用。
+     * Execute the tool and handle wait_after delay.
+     * Called by ToolRegistry.executeTool().
      */
     fun executeWithWaitAfter(params: @JvmSuppressWildcards Map<String, Any>): ToolResult {
         val result = execute(params)
-        // 执行成功后才等待
+        // Only wait if execution succeeded
         if (result.isSuccess) {
             val waitMs = optionalLong(params, "wait_after", 0)
             if (waitMs in 1..MAX_WAIT_AFTER_MS) {

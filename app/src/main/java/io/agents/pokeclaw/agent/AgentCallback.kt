@@ -7,8 +7,8 @@ import io.agents.pokeclaw.tool.ToolResult
 
 interface AgentCallback {
     /**
-     * 新的一轮 Agent Loop 开始时的回调
-     * @param round 当前轮数（从 1 开始）
+     * Callback when a new Agent Loop round starts
+     * @param round current round number (starts from 1)
      */
     fun onLoopStart(round: Int)
     fun onContent(round: Int, content: String)
