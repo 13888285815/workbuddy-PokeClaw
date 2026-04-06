@@ -35,6 +35,56 @@ class ForegroundService : Service() {
         fun isRunning(): Boolean = _isRunning
 
         /**
+         * Update the foreground notification with task progress text.
+         * Safe to call from any thread — posts to NotificationManager directly.
+         */
+        fun updateTaskStatus(context: Context, statusText: String) {
+            try {
+                val intent = Intent(context, io.agents.pokeclaw.ui.chat.ComposeChatActivity::class.java)
+                val pendingIntent = PendingIntent.getActivity(
+                    context, 0, intent,
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+                val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setContentTitle("PokeClaw · Task in progress")
+                    .setContentText(statusText)
+                    .setSmallIcon(R.drawable.ic_launcher)
+                    .setContentIntent(pendingIntent)
+                    .setOngoing(true)
+                    .setOnlyAlertOnce(true)
+                    .build()
+                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                manager.notify(NOTIFICATION_ID, notification)
+            } catch (e: Exception) {
+                // Non-critical — don't crash if notification update fails
+            }
+        }
+
+        /**
+         * Reset notification back to idle state.
+         */
+        fun resetToIdle(context: Context) {
+            try {
+                val intent = Intent(context, io.agents.pokeclaw.ui.chat.ComposeChatActivity::class.java)
+                val pendingIntent = PendingIntent.getActivity(
+                    context, 0, intent,
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+                val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setContentTitle(context.getString(R.string.notification_content_title))
+                    .setContentText(context.getString(R.string.notification_content_text))
+                    .setSmallIcon(R.drawable.ic_launcher)
+                    .setContentIntent(pendingIntent)
+                    .setOngoing(true)
+                    .build()
+                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                manager.notify(NOTIFICATION_ID, notification)
+            } catch (e: Exception) {
+                // Non-critical
+            }
+        }
+
+        /**
          * 启动前台服务
          * @param context Context
          * @return 是否成功启动（无权限时返回 false）

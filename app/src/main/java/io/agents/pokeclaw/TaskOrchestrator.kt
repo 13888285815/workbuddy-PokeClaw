@@ -11,6 +11,7 @@ import io.agents.pokeclaw.channel.Channel
 import io.agents.pokeclaw.channel.ChannelManager
 import io.agents.pokeclaw.floating.FloatingCircleManager
 import io.agents.pokeclaw.service.ClawAccessibilityService
+import io.agents.pokeclaw.service.ForegroundService
 import io.agents.pokeclaw.tool.ToolResult
 import io.agents.pokeclaw.utils.XLog
 
@@ -141,6 +142,7 @@ class TaskOrchestrator(
         ClawAccessibilityService.getInstance()?.pressHome()
 
         FloatingCircleManager.showTaskNotify(task, channel)
+        ForegroundService.updateTaskStatus(ClawApplication.instance, "Warming up AI...")
 
         // 每轮消息聚合缓冲：thinking + toolResult 攒成一条，减少发送次数
         val roundBuffer = StringBuilder()
@@ -158,7 +160,9 @@ class TaskOrchestrator(
                 flushRoundBuffer()
                 FloatingCircleManager.setRunningState(round, channel)
                 XLog.d(TAG, "onLoopStart: round=$round")
-                taskProgressCallback?.invoke("Reading screen... (step $round)")
+                val msg = "Reading screen... (step $round)"
+                taskProgressCallback?.invoke(msg)
+                ForegroundService.updateTaskStatus(ClawApplication.instance, msg)
             }
 
             override fun onContent(round: Int, content: String) {
@@ -171,7 +175,9 @@ class TaskOrchestrator(
                 XLog.d(TAG, "onToolCall: $toolId($toolName), $parameters")
                 // Show human-readable tool name to user (e.g. "Tapping screen...")
                 if (toolName.isNotEmpty()) {
-                    taskProgressCallback?.invoke("$toolName...")
+                    val msg = "$toolName..."
+                    taskProgressCallback?.invoke(msg)
+                    ForegroundService.updateTaskStatus(ClawApplication.instance, msg)
                 }
             }
 
@@ -202,6 +208,7 @@ class TaskOrchestrator(
             override fun onComplete(round: Int, finalAnswer: String, totalTokens: Int) {
                 XLog.i(TAG, "onComplete: 轮数=$round, totalTokens=$totalTokens, answer=$finalAnswer")
                 taskProgressCallback?.invoke("Task completed.")
+                ForegroundService.resetToIdle(ClawApplication.instance)
                 flushRoundBuffer()
                 releaseTask()
                 ChannelManager.flushMessages(channel)
@@ -212,6 +219,7 @@ class TaskOrchestrator(
             override fun onError(round: Int, error: Exception, totalTokens: Int) {
                 XLog.e(TAG, "onError: ${error.message}, totalTokens=$totalTokens", error)
                 taskProgressCallback?.invoke("Task failed: ${error.message}")
+                ForegroundService.resetToIdle(ClawApplication.instance)
                 flushRoundBuffer()
                 releaseTask()
                 ChannelManager.sendMessage(channel, ClawApplication.instance.getString(R.string.channel_msg_task_error, error.message), messageID)
