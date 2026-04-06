@@ -36,6 +36,9 @@ https://github.com/user-attachments/assets/18d49148-c744-46a5-98a2-0f8320f00d19
 
 
 
+Gemma 4 launched days ago.
+
+I pulled two all-nighters and built the first working app that uses it to autonomously control an Android phone.
 
 **AI controls your phone. And it never leaves your phone.**
 
