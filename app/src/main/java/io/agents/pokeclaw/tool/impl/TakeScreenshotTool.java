@@ -37,7 +37,7 @@ public class TakeScreenshotTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "对当前屏幕进行截图，保存为 PNG 文件并返回本地文件路径。需要 Android 11+（API 30）。";
+        return "Take a screenshot of the current screen, save it as a PNG file and return the local file path. Requires Android 11+ (API 30).";
     }
 
     @Override

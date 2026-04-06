@@ -32,7 +32,7 @@ public class FinishTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "标记当前任务已完成。当成功完成用户请求时调用此工具。提供已完成工作的摘要。";
+        return "Mark the current task as complete. Call this tool when the user's request has been successfully fulfilled. Provide a summary of what was accomplished.";
     }
 
     @Override
@@ -45,6 +45,6 @@ public class FinishTool extends BaseTool {
     @Override
     public ToolResult execute(Map<String, Object> params) {
         String summary = requireString(params, "summary");
-        return ToolResult.success("完成任务: " + summary);
+        return ToolResult.success("Task completed: " + summary);
     }
 }

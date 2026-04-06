@@ -10,8 +10,8 @@ import io.agents.pokeclaw.service.ClawAccessibilityService
 import io.agents.pokeclaw.utils.KVUtils
 
 /**
- * 通道初始化与消息路由。
- * 负责读取本地配置初始化各通道，并将收到的消息分发给 [TaskOrchestrator]。
+ * Channel initialization and message routing.
+ * Responsible for reading local config to initialize channels and dispatching received messages to [TaskOrchestrator].
  */
 class ChannelSetup(
     private val taskOrchestrator: TaskOrchestrator

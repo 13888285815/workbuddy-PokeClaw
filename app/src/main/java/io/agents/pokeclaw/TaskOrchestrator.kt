@@ -16,10 +16,10 @@ import io.agents.pokeclaw.tool.ToolResult
 import io.agents.pokeclaw.utils.XLog
 
 /**
- * 任务编排器，负责 Agent 生命周期管理、任务锁、任务执行与回调处理。
+ * Task orchestrator, responsible for Agent lifecycle management, task locking, task execution and callback handling.
  *
- * @param agentConfigProvider 延迟获取最新 AgentConfig 的回调
- * @param onTaskFinished 每次任务结束（成功/失败/取消）后的通知，用于刷新用户信息等
+ * @param agentConfigProvider callback to lazily retrieve the latest AgentConfig
+ * @param onTaskFinished notification after each task ends (success/failure/cancel), used for refreshing user info etc
  */
 class TaskOrchestrator(
     private val agentConfigProvider: () -> AgentConfig,
@@ -46,7 +46,7 @@ class TaskOrchestrator(
     var inProgressTaskChannel: Channel? = null
         private set
 
-    // ==================== Agent 生命周期 ====================
+    // ==================== Agent Lifecycle ====================
 
     fun initAgent() {
         agentService = AgentServiceFactory.create()
@@ -76,10 +76,10 @@ class TaskOrchestrator(
         }
     }
 
-    // ==================== 任务锁 ====================
+    // ==================== Task Lock ====================
 
     /**
-     * 原子地尝试获取任务锁。如果当前无任务在执行，则标记为占用并返回 true；否则返回 false。
+     * Atomically try to acquire the task lock. Returns true and marks as busy if no task is running; returns false otherwise.
      */
     fun tryAcquireTask(messageId: String, channel: Channel): Boolean {
         synchronized(taskLock) {
@@ -91,7 +91,7 @@ class TaskOrchestrator(
     }
 
     /**
-     * 释放任务锁，返回释放前的 (channel, messageId) 供调用方使用。
+     * Release the task lock. Returns the (channel, messageId) held before release for the caller to use.
      */
     private fun releaseTask(): Pair<Channel?, String> {
         synchronized(taskLock) {
@@ -109,7 +109,7 @@ class TaskOrchestrator(
         }
     }
 
-    // ==================== 任务执行 ====================
+    // ==================== Task Execution ====================
 
     fun cancelCurrentTask() {
         if (!isTaskRunning()) return
@@ -144,7 +144,7 @@ class TaskOrchestrator(
         FloatingCircleManager.showTaskNotify(task, channel)
         ForegroundService.updateTaskStatus(ClawApplication.instance, "Warming up AI...")
 
-        // 每轮消息聚合缓冲：thinking + toolResult 攒成一条，减少发送次数
+        // Per-round message aggregation buffer: accumulate thinking + toolResult into one message to reduce sends
         val roundBuffer = StringBuilder()
 
         fun flushRoundBuffer() {
@@ -156,7 +156,7 @@ class TaskOrchestrator(
 
         agentService.executeTask(task, object : AgentCallback {
             override fun onLoopStart(round: Int) {
-                // 新一轮开始前，flush 上一轮积攒的消息
+                // Before starting a new round, flush the accumulated messages from the previous round
                 flushRoundBuffer()
                 FloatingCircleManager.setRunningState(round, channel)
                 XLog.d(TAG, "onLoopStart: round=$round")
@@ -193,11 +193,11 @@ class TaskOrchestrator(
                 }
                 XLog.e(TAG, "onToolResult: $toolName, $status $data")
                 if (toolId == "finish" && (result.data?.isNotEmpty() ?: false)) {
-                    // finish 的结果单独发，不合并（这是最终回复）
+                    // finish result is sent separately, not merged (this is the final reply)
                     flushRoundBuffer()
                     ChannelManager.sendMessage(channel, result.data, messageID)
                 } else {
-                    // 追加到本轮缓冲
+                    // Append to current round buffer
                     if (roundBuffer.isNotEmpty()) roundBuffer.append("\n")
                     roundBuffer.append(
                         app.getString(R.string.channel_msg_tool_execution, toolName + parameters, status)
@@ -206,7 +206,7 @@ class TaskOrchestrator(
             }
 
             override fun onComplete(round: Int, finalAnswer: String, totalTokens: Int) {
-                XLog.i(TAG, "onComplete: 轮数=$round, totalTokens=$totalTokens, answer=$finalAnswer")
+                XLog.i(TAG, "onComplete: rounds=$round, totalTokens=$totalTokens, answer=$finalAnswer")
                 taskProgressCallback?.invoke("Task completed.")
                 ForegroundService.resetToIdle(ClawApplication.instance)
                 flushRoundBuffer()

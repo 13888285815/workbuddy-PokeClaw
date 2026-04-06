@@ -18,7 +18,7 @@ import io.agents.pokeclaw.ui.home.HomeActivity
 import io.agents.pokeclaw.utils.KVUtils
 
 /**
- * 前台服务 - 常驻通知
+ * Foreground service - persistent notification
  */
 class ForegroundService : Service() {
 
@@ -30,7 +30,7 @@ class ForegroundService : Service() {
         private var _isRunning = false
 
         /**
-         * 检查前台服务是否正在运行
+         * Check whether the foreground service is running
          */
         fun isRunning(): Boolean = _isRunning
 
@@ -85,12 +85,12 @@ class ForegroundService : Service() {
         }
 
         /**
-         * 启动前台服务
+         * Start the foreground service
          * @param context Context
-         * @return 是否成功启动（无权限时返回 false）
+         * @return true if started successfully, false if notification permission is missing
          */
         fun start(context: Context): Boolean {
-            // Android 13+ 需要检查通知权限
+            // Android 13+ requires notification permission check
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
                         != PackageManager.PERMISSION_GRANTED) {

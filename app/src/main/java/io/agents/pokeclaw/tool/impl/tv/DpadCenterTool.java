@@ -27,7 +27,7 @@ public class DpadCenterTool extends BaseKeyTool {
 
     @Override
     public String getDescriptionCN() {
-        return "按下遥控器确认/OK键。确认选择或点击当前聚焦的元素。";
+        return "Press the remote control confirm/OK key. Confirms the selection or clicks the currently focused element.";
     }
 
     @Override

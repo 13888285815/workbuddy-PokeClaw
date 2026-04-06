@@ -41,7 +41,7 @@ public class SendFileTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "将设备上的文件发送给用户。需要提供文件的绝对路径。";
+        return "Send a file on the device to the user. The absolute path of the file must be provided.";
     }
 
     @Override
@@ -54,7 +54,7 @@ public class SendFileTool extends BaseTool {
     @Override
     public ToolResult execute(Map<String, Object> params) {
         android.content.Context ctx = ClawApplication.Companion.getInstance();
-        // 检查存储权限
+        // Check storage permission
         if (!hasStoragePermission()) {
             return ToolResult.error(ctx.getString(R.string.tool_no_storage_permission));
         }
@@ -72,7 +72,7 @@ public class SendFileTool extends BaseTool {
             return ToolResult.error(ctx.getString(R.string.tool_no_storage_permission));
         }
 
-        // 获取当前任务的通道和消息ID
+        // Get current task channel and message ID
         Channel channel = ClawApplicationKt.getAppViewModel().getInProgressTaskChannel();
         String messageId = ClawApplicationKt.getAppViewModel().getInProgressTaskMessageId();
 

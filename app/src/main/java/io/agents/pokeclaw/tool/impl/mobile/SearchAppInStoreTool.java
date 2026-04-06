@@ -72,10 +72,10 @@ public class SearchAppInStoreTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "打开手机应用商店以便搜索和下载应用。自动检测手机品牌并打开对应的应用商店。"
-                + "此工具打开商店后，你需要使用 get_screen_info 查看商店界面，"
-                + "然后找到搜索框并使用 input_text 或 tap 输入关键词进行搜索。"
-                + "当 open_app 因应用未安装而失败时使用此工具。";
+        return "Open the phone's app store to search and download apps. Automatically detects the phone brand and opens the corresponding app store."
+                + " After the store is open, use get_screen_info to see the store UI,"
+                + " then find the search box and use input_text or tap to enter the search keyword."
+                + " Use this tool when open_app fails because the app is not installed.";
     }
 
     @Override

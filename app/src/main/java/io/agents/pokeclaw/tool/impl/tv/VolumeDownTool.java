@@ -27,7 +27,7 @@ public class VolumeDownTool extends BaseKeyTool {
 
     @Override
     public String getDescriptionCN() {
-        return "按下音量减小键降低音量。";
+        return "Press the volume down key to decrease volume.";
     }
 
     @Override

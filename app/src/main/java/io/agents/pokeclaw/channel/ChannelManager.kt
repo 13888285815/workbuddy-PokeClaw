@@ -36,7 +36,7 @@ object ChannelManager {
     private var messageListener: OnMessageReceivedListener? = null
 
     /**
-     * 收到消息的回调接口
+     * Callback interface for received messages
      */
     interface OnMessageReceivedListener {
         fun onMessageReceived(channel: Channel, message: String, messageID: String)
@@ -48,7 +48,7 @@ object ChannelManager {
     }
 
     /**
-     * 初始化所有通道，在 Application.onCreate() 中调用即可。
+     * Initialize all channels. Call this in Application.onCreate().
      */
     @JvmStatic
     @JvmOverloads
@@ -94,11 +94,11 @@ object ChannelManager {
         )
 
         handlers.values.forEach { it.init() }
-        XLog.i(TAG, "ChannelManager 初始化完成")
+        XLog.i(TAG, "ChannelManager initialized")
     }
 
     /**
-     * 从 MMKV 重新读取配置并初始化所有通道（用户保存配置后调用）
+     * Re-read config from MMKV and re-initialize all channels (call after user saves config)
      */
     @JvmStatic
     fun reinitFromStorage() {
@@ -106,13 +106,13 @@ object ChannelManager {
     }
 
     /**
-     * 仅重连未连接的通道（网络恢复时调用，不影响已正常运行的通道）
+     * Reconnect only channels that are not connected (call on network recovery; does not affect channels already running)
      */
     @JvmStatic
     fun reconnectIfNeeded() {
         handlers.forEach { (channel, handler) ->
             if (!handler.isConnected()) {
-                XLog.i(TAG, "重连${channel.displayName}通道")
+                XLog.i(TAG, "Reconnecting ${channel.displayName} channel")
                 handler.reinitFromStorage()
             }
         }
@@ -152,7 +152,7 @@ object ChannelManager {
     fun disconnectAll() {
         handlers.forEach { (channel, handler) ->
             if (handler.isConnected()) {
-                XLog.i(TAG, "断开${channel.displayName}通道")
+                XLog.i(TAG, "Disconnecting ${channel.displayName} channel")
                 handler.disconnect()
             }
         }
@@ -162,7 +162,7 @@ object ChannelManager {
     fun sendMessage(channel: Channel, content: String, messageID: String) {
         val trimmedContent = content.trim('\n', '\r')
         if (trimmedContent.isBlank()) {
-            XLog.w(TAG, "sendMessage 跳过空消息 [${channel.displayName}]")
+            XLog.w(TAG, "sendMessage skipping empty message [${channel.displayName}]")
             return
         }
         XLog.d(TAG, "sendMessage [${channel.displayName}]: ${trimmedContent.take(120)}")
@@ -181,7 +181,7 @@ object ChannelManager {
     }
 
     /**
-     * 立即发送指定通道缓冲区中的待发消息。任务结束时调用。
+     * Immediately flush pending messages in the specified channel's buffer. Call when a task ends.
      */
     @JvmStatic
     fun flushMessages(channel: Channel) {
@@ -189,7 +189,7 @@ object ChannelManager {
     }
 
     /**
-     * 恢复指定通道的路由上下文，在定时任务执行前调用。
+     * Restore the routing context for the specified channel. Call before a scheduled task executes.
      */
     @JvmStatic
     fun restoreRoutingContext(channel: Channel, targetUserId: String) {
@@ -197,7 +197,7 @@ object ChannelManager {
     }
 
     /**
-     * 获取指定通道最近一次消息发送者的标识，用于定时任务持久化。
+     * Get the identifier of the most recent message sender for the specified channel. Used for scheduled task persistence.
      */
     @JvmStatic
     fun getLastSenderId(channel: Channel): String? {
@@ -205,7 +205,7 @@ object ChannelManager {
     }
 
     /**
-     * 按用户标识主动发送消息（不依赖 messageID 上下文），用于定时任务触发。
+     * Proactively send a message by user identifier (without relying on messageID context). Used for scheduled task triggers.
      */
     @JvmStatic
     fun sendMessageToUser(channel: Channel, userId: String, content: String) {
@@ -216,7 +216,7 @@ object ChannelManager {
     }
 
     /**
-     * 供各 ChannelHandler 内部调用，将收到的消息分发给注册的监听器。
+     * Called internally by ChannelHandlers to dispatch received messages to registered listeners.
      */
     @JvmStatic
     fun dispatchMessage(channel: Channel, message: String, messageID: String) {

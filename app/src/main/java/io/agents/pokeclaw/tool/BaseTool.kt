@@ -65,17 +65,17 @@ abstract class BaseTool {
         return result
     }
 
-    /** 英文描述，子类必须实现 */
+    /** English description, subclasses must implement */
     abstract fun getDescriptionEN(): String
 
-    /** 中文描述，子类必须实现 */
+    /** Chinese description, subclasses must implement */
     abstract fun getDescriptionCN(): String
 
-    /** 根据语言开关返回描述 */
+    /** Returns description based on language toggle */
     fun getDescription(): String =
         if (useChineseDescription) getDescriptionCN() else getDescriptionEN()
 
-    /** 用于展示给用户看的中文名称，子类可覆写 */
+    /** Display name shown to the user; subclasses may override */
     open fun getDisplayName(): String = getName()
 
     // === Parameter helpers ===
@@ -133,14 +133,15 @@ abstract class BaseTool {
     // === Screen bounds helpers ===
 
     /**
-     * 获取屏幕尺寸 [width, height]。
+     * Get screen size [width, height].
      */
     protected fun getScreenSize(): IntArray {
         return intArrayOf(ScreenUtils.getScreenWidth(), ScreenUtils.getScreenHeight())
     }
 
     /**
-     * 校验坐标是否在屏幕范围内，超出则返回错误信息，合法返回 null。
+     * Validate that coordinates are within screen bounds.
+     * Returns an error message if out of bounds, or null if valid.
      */
     protected fun validateCoordinates(x: Int, y: Int): String? {
         val size = getScreenSize()

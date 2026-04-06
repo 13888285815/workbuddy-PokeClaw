@@ -251,9 +251,9 @@ public class ClawAccessibilityService extends AccessibilityService {
             return;
         }
 
-        // 跳过不在屏幕可见区域内的节点（滚动容器中超出屏幕的元素）
+        // Skip nodes not visible on screen (elements in scroll containers that are off-screen)
         if (!node.isVisibleToUser()) {
-            // 仍然遍历子节点，因为父节点不可见不代表所有子节点都不可见
+            // Still traverse child nodes, because a parent being invisible does not mean all children are invisible
             for (int i = 0; i < node.getChildCount(); i++) {
                 AccessibilityNodeInfo child = node.getChild(i);
                 if (child != null) {
@@ -264,7 +264,7 @@ public class ClawAccessibilityService extends AccessibilityService {
             return;
         }
 
-        // 判断当前节点是否有"信息量"（有 text/desc/可交互/可滚动/可编辑/进度条/滑块）
+        // Determine whether the current node is "meaningful" (has text/desc, is interactive/scrollable/editable/progress/slider)
         boolean hasText = node.getText() != null && node.getText().length() > 0;
         boolean hasDesc = node.getContentDescription() != null && node.getContentDescription().length() > 0;
         boolean isInteractive = node.isClickable() || node.isScrollable() || node.isEditable()
@@ -304,7 +304,7 @@ public class ClawAccessibilityService extends AccessibilityService {
             }
         }
 
-        // 子节点层级：如果当前节点被跳过（非 meaningful），子节点保持同层级，不增加 depth
+        // Child depth: if current node was skipped (not meaningful), children keep the same depth level
         int childDepth = isMeaningful ? depth + 1 : depth;
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
@@ -497,7 +497,7 @@ public class ClawAccessibilityService extends AccessibilityService {
      */
     public boolean unlockScreen() {
         try {
-            // 1. 唤醒屏幕
+            // 1. Wake up screen
             android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
             if (pm != null && !pm.isInteractive()) {
                 @SuppressWarnings("deprecation")
@@ -507,11 +507,11 @@ public class ClawAccessibilityService extends AccessibilityService {
                 );
                 wl.acquire(3000);
                 wl.release();
-                // 等屏幕亮起
+                // Wait for screen to turn on
                 try { Thread.sleep(500); } catch (InterruptedException ignored) {}
             }
 
-            // 2. 模拟上滑手势解锁
+            // 2. Simulate swipe-up gesture to unlock
             android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
             int centerX = dm.widthPixels / 2;
             int bottomY = (int) (dm.heightPixels * 0.8);

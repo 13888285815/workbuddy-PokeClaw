@@ -23,15 +23,15 @@ import java.util.Random;
 import java.util.Set;
 
 /**
- * 动作编排工具：将已有的原子工具按顺序组合成一个动作序列，并支持循环执行。
+ * Action orchestration tool: combines existing atomic tools into an ordered action sequence with loop support.
  *
- * AI 可以通过 actions 参数传入一组有序的工具调用，每个 action 指定要调用的工具名和参数，
- * 然后通过 repeat_count 控制整个序列重复执行的次数。
+ * The AI passes an ordered set of tool calls via the actions parameter. Each action specifies the tool name and parameters.
+ * The repeat_count parameter controls how many times the entire sequence is repeated.
  *
- * 典型场景：
- * - 刷抖音：[swipe up, wait 10s] × 30 次
- * - 轮流滑动：[swipe up, wait, swipe down, wait, swipe left, wait, swipe right, wait] × 10 次
- * - 反复点赞：[tap 点赞位置, wait 5s, swipe up] × 20 次
+ * Typical use cases:
+ * - Scroll TikTok: [swipe up, wait 10s] × 30 times
+ * - Alternating swipes: [swipe up, wait, swipe down, wait, swipe left, wait, swipe right, wait] × 10 times
+ * - Repeated likes: [tap like position, wait 5s, swipe up] × 20 times
  */
 public class RepeatActionsTool extends BaseTool {
 
@@ -74,15 +74,15 @@ public class RepeatActionsTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "将已有的工具调用组合成动作序列并重复执行。"
-                + "通过 actions 参数传入 JSON 数组，每个元素格式为 {\"tool\": \"工具名\", \"params\": {参数}}，"
-                + "整个序列会按 repeat_count 次循环执行。"
-                + "默认每轮之间自动添加 3~10 秒的随机间隔，模拟真人操作节奏。"
-                + "仅当用户明确要求固定间隔时（如「每隔10秒刷一次」），才将 interval_min_ms 和 interval_max_ms 设为相同的固定值。"
-                + "否则请使用默认的随机间隔，或自定义随机范围。"
-                + "示例 - 刷抖音30次（默认随机间隔）: "
-                + "actions=[{\"tool\":\"swipe\",\"params\":{\"start_x\":540,\"start_y\":1600,\"end_x\":540,\"end_y\":400}}], repeat_count=30。"
-                + "actions 中不能调用 repeat_actions 和 finish。";
+        return "Compose existing tool calls into an action sequence and repeat it. "
+                + "Pass a JSON array via the actions parameter; each element has the format {\"tool\": \"<tool_name>\", \"params\": {<params>}}. "
+                + "The entire sequence will loop repeat_count times. "
+                + "By default, a random 3~10 second delay is added between rounds to simulate human-like pacing. "
+                + "Only set interval_min_ms and interval_max_ms to the same fixed value when the user explicitly requests a fixed interval (e.g. 'every 10 seconds'). "
+                + "Otherwise use the default random interval, or customize the range. "
+                + "Example - scroll TikTok 30 times (default random interval): "
+                + "actions=[{\"tool\":\"swipe\",\"params\":{\"start_x\":540,\"start_y\":1600,\"end_x\":540,\"end_y\":400}}], repeat_count=30. "
+                + "Cannot call repeat_actions or finish inside actions.";
     }
 
     @Override

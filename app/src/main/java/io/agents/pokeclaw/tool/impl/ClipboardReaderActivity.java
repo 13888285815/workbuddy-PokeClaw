@@ -12,9 +12,9 @@ import android.os.Bundle;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * 透明 Activity，用于获取前台焦点以读取剪贴板内容。
- * Android 10+ 限制后台应用读取剪贴板，需要应用处于前台。
- * 剪贴板读取在 onWindowFocusChanged(true) 中执行，确保窗口已获得焦点。
+ * Transparent Activity used to gain foreground focus for reading clipboard content.
+ * Android 10+ restricts background apps from reading the clipboard; the app must be in the foreground.
+ * Clipboard reading is performed in onWindowFocusChanged(true) to ensure the window has gained focus.
  */
 public class ClipboardReaderActivity extends Activity {
 

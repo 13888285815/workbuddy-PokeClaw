@@ -33,7 +33,7 @@ public class LongPressTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "在指定的屏幕坐标 (x, y) 处执行长按操作，持续指定时长。";
+        return "Long press at the specified screen coordinates (x, y) for the given duration.";
     }
 
     @Override

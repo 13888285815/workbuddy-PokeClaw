@@ -9,7 +9,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 
 /**
- * 为了可以获取一个全局的ViewModel
+ * Provides a global ViewModel instance
  */
 open class BaseApp : Application(), ViewModelStoreOwner {
 
@@ -23,7 +23,7 @@ open class BaseApp : Application(), ViewModelStoreOwner {
     }
 
     /**
-     * 获取一个全局的ViewModel
+     * Get the global ViewModel instance
      */
     fun getAppViewModelProvider(): ViewModelProvider {
         return ViewModelProvider(this, this.getAppFactory())

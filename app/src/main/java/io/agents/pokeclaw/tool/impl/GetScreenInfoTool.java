@@ -33,7 +33,7 @@ public class GetScreenInfoTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "获取当前屏幕的UI层级树，包括所有可见元素的属性（文本、ID、边界、可点击状态等）。用于了解当前屏幕显示的内容。";
+        return "Get the UI hierarchy tree of the current screen, including attributes of all visible elements (text, ID, bounds, clickable state, etc.). Use this to understand what is currently displayed on screen.";
     }
 
     @Override
@@ -44,8 +44,8 @@ public class GetScreenInfoTool extends BaseTool {
     public static final String SYSTEM_DIALOG_BLOCKED = "__SYSTEM_DIALOG_BLOCKED__";
 
     /**
-     * 切换为完整节点树模式（包含所有节点和全部属性，用于调试）。
-     * false = 精简模式（默认，省 token）；true = 完整模式。
+     * Switch to full node tree mode (includes all nodes and all attributes, for debugging).
+     * false = compact mode (default, saves tokens); true = full mode.
      */
     public static boolean useFullTree = false;
 

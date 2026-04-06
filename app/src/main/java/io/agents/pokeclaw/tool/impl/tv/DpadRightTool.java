@@ -27,7 +27,7 @@ public class DpadRightTool extends BaseKeyTool {
 
     @Override
     public String getDescriptionCN() {
-        return "按下遥控器右方向键。将焦点移动到当前聚焦元素右侧的元素。";
+        return "Press the remote control right directional key. Moves focus to the element to the right of the currently focused element.";
     }
 
     @Override

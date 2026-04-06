@@ -46,9 +46,9 @@ public class InputTextTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "向当前聚焦的文本框输入文本。先 tap 文本框使其获得焦点，再调用此工具。"
-                + "默认先清空已有内容再输入（clear_first=true）。"
-                + "设置 clear_first=false 可追加文本而不清空。";
+        return "Type text into the currently focused text field. Tap the text field first to give it focus, then call this tool."
+                + " By default, existing content is cleared before typing (clear_first=true)."
+                + " Set clear_first=false to append text without clearing.";
     }
 
     @Override
@@ -77,17 +77,17 @@ public class InputTextTool extends BaseTool {
             return ToolResult.error("No target text field found");
         }
 
-        // 先尝试点击获取焦点
+        // First try tapping to gain focus
         targetNode.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
         targetNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
 
-        // 如果需要清空，先全选+删除
+        // If clear_first, select all and delete
         if (clearFirst) {
             clearNodeText(targetNode);
         }
 
-        // 策略1: 先尝试 ACTION_SET_TEXT（标准方式）
-        // 注意：ACTION_SET_TEXT 本身是覆盖式的，append 模式下需要拼接原有文本
+        // Strategy 1: try ACTION_SET_TEXT (standard approach)
+        // Note: ACTION_SET_TEXT overwrites existing text; for append mode we must concatenate
         if (clearFirst) {
             Bundle args = new Bundle();
             args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text);
@@ -95,7 +95,7 @@ public class InputTextTool extends BaseTool {
                 return ToolResult.success("Input text: " + text);
             }
         } else {
-            // append 模式：读取已有文本 + 新文本
+            // Append mode: read existing text + new text
             CharSequence existing = targetNode.getText();
             String newText = (existing != null ? existing.toString() : "") + text;
             Bundle args = new Bundle();
@@ -105,17 +105,17 @@ public class InputTextTool extends BaseTool {
             }
         }
 
-        // 策略2: 通过剪贴板粘贴（兼容性更好）
+        // Strategy 2: paste via clipboard (better compatibility)
         boolean clipboardSet = setClipboardText(service, text);
         if (!clipboardSet) {
             return ToolResult.error("Failed to set clipboard text");
         }
 
         if (clearFirst) {
-            // 再次确保清空（有些 App 策略1失败后可能没清干净）
+            // Clear again (some apps may not have fully cleared after strategy 1 failed)
             clearNodeText(targetNode);
         } else {
-            // append 模式：光标移到末尾
+            // Append mode: move cursor to end
             CharSequence existing = targetNode.getText();
             int end = existing != null ? existing.length() : 0;
             Bundle cursorArgs = new Bundle();
@@ -124,7 +124,7 @@ public class InputTextTool extends BaseTool {
             targetNode.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, cursorArgs);
         }
 
-        // 执行粘贴
+        // Perform paste
         if (targetNode.performAction(AccessibilityNodeInfo.ACTION_PASTE)) {
             return ToolResult.success(clearFirst ? "Input text (via paste): " + text : "Appended text (via paste): " + text);
         }
@@ -133,16 +133,16 @@ public class InputTextTool extends BaseTool {
     }
 
     /**
-     * 清空输入框内容：全选 → 删除
+     * Clear input field: select all → delete
      */
     private void clearNodeText(AccessibilityNodeInfo node) {
-        // 全选
+        // Select all
         Bundle selectAllArgs = new Bundle();
         selectAllArgs.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0);
         selectAllArgs.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, Integer.MAX_VALUE);
         node.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, selectAllArgs);
 
-        // 用空字符串覆盖选中内容
+        // Overwrite selection with empty string
         Bundle clearArgs = new Bundle();
         clearArgs.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "");
         node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, clearArgs);

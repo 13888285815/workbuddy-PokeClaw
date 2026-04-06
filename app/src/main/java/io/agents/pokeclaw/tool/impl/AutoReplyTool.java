@@ -39,8 +39,8 @@ public class AutoReplyTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "启用或禁用自动回复功能。启用后，手机会监控指定联系人的消息并自动生成回复。" +
-                "action='on' 加联系人名字开启，action='off' 关闭。";
+        return "Enable or disable auto-reply. When enabled, the phone monitors messages from the specified contact and auto-generates replies." +
+                " Use action='on' with a contact name to enable, action='off' to disable.";
     }
 
     @Override

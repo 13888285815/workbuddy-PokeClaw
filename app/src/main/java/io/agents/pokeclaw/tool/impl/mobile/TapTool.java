@@ -33,7 +33,7 @@ public class TapTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "在指定的屏幕坐标 (x, y) 处点击。";
+        return "Tap at the specified screen coordinates (x, y).";
     }
 
     @Override

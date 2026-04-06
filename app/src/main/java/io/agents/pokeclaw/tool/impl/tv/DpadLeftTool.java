@@ -27,7 +27,7 @@ public class DpadLeftTool extends BaseKeyTool {
 
     @Override
     public String getDescriptionCN() {
-        return "按下遥控器左方向键。将焦点移动到当前聚焦元素左侧的元素。";
+        return "Press the remote control left directional key. Moves focus to the element to the left of the currently focused element.";
     }
 
     @Override

@@ -9,9 +9,9 @@ import android.content.Intent
 import io.agents.pokeclaw.utils.XLog
 
 /**
- * 开机自启动广播接收器
- * 收到 BOOT_COMPLETED 后启动前台服务，保持后台运行
- * 不启动 Activity，避免与用户手动打开 App 冲突
+ * Boot broadcast receiver for auto-start on device boot
+ * Starts the foreground service upon receiving BOOT_COMPLETED to keep the app running in the background
+ * Does not launch an Activity, to avoid conflicting with the user manually opening the app
  */
 class BootReceiver : BroadcastReceiver() {
 
@@ -22,7 +22,7 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
             intent.action == "android.intent.action.QUICKBOOT_POWERON") {
-            XLog.i(TAG, "收到开机广播，启动前台服务")
+            XLog.i(TAG, "Boot broadcast received, starting foreground service")
             ForegroundService.start(context)
         }
     }

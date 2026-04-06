@@ -34,7 +34,7 @@ public class SystemKeyTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "按下系统按键。支持的按键：back（返回）、home（回到桌面）、recent_apps（打开最近任务）、notifications（展开通知栏）、collapse_notifications（收起通知栏/快捷设置）、lock_screen（锁屏，需Android 9+）、unlock_screen（唤醒并解锁屏幕）。";
+        return "Press a system key. Supported keys: back (go back), home (go to home screen), recent_apps (open recent tasks), notifications (expand notification bar), collapse_notifications (collapse notification bar/quick settings), lock_screen (lock screen, requires Android 9+), unlock_screen (wake and unlock screen).";
     }
 
     @Override

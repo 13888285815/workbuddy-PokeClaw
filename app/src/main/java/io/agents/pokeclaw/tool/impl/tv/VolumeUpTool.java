@@ -27,7 +27,7 @@ public class VolumeUpTool extends BaseKeyTool {
 
     @Override
     public String getDescriptionCN() {
-        return "按下音量增大键增加音量。";
+        return "Press the volume up key to increase volume.";
     }
 
     @Override

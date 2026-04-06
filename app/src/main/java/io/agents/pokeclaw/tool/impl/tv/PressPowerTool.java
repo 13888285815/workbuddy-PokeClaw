@@ -27,7 +27,7 @@ public class PressPowerTool extends BaseKeyTool {
 
     @Override
     public String getDescriptionCN() {
-        return "按下电源键。可能会关闭屏幕或使设备进入休眠。";
+        return "Press the power key. May turn off the screen or put the device to sleep.";
     }
 
     @Override

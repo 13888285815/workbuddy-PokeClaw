@@ -13,7 +13,7 @@ import io.agents.pokeclaw.utils.XLog
 import com.blankj.utilcode.util.NetworkUtils
 
 /**
- * Application 入口
+ * Application entry point
  */
 
 val appViewModel: AppViewModel by lazy { ClawApplication.appViewModelInstance }
@@ -36,11 +36,11 @@ class ClawApplication : BaseApp() {
         ToolRegistry.getInstance().registerAllTools(ToolRegistry.DeviceType.MOBILE)
         XLog.e(TAG, "ClawApplication initialized, tools registered: ${ToolRegistry.getInstance().getAllTools().size}")
 
-        // 网络日志输出到文件（调试时设为 true）
+        // Write network logs to file (set to true when debugging)
         DefaultAgentService.FILE_LOGGING_ENABLED = BuildConfig.DEBUG
         DefaultAgentService.FILE_LOGGING_CACHE_DIR = cacheDir
 
-        // 轻量初始化（主线程）
+        // Lightweight initialization (main thread)
         appViewModelInstance.initCommon()
         if (!ForegroundService.isRunning()) {
             val started = ForegroundService.start(this)
@@ -60,22 +60,22 @@ class ClawApplication : BaseApp() {
     private var networkListener: NetworkUtils.OnNetworkStatusChangedListener? = null
 
     /**
-     * 监听网络恢复，自动重新初始化通道。
-     * 解决开机自启动时无网络导致通道初始化失败的问题，以及运行中断网恢复后通道重连。
+     * Listen for network recovery and automatically re-initialize channels.
+     * Fixes channel initialization failures when booting with no network, and reconnects channels after network outages.
      */
     private fun registerNetworkCallback() {
         networkListener = object : NetworkUtils.OnNetworkStatusChangedListener {
             override fun onConnected(networkType: NetworkUtils.NetworkType?) {
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     if (KVUtils.hasLlmConfig()) {
-                        XLog.i(TAG, "网络恢复(${networkType?.name})，检查并重连断开的通道")
+                        XLog.i(TAG, "Network recovered (${networkType?.name}), checking and reconnecting dropped channels")
                         ChannelManager.reconnectIfNeeded()
                     }
                 }, 2000)
             }
 
             override fun onDisconnected() {
-                XLog.w(TAG, "网络断开")
+                XLog.w(TAG, "Network disconnected")
             }
         }
         NetworkUtils.registerNetworkStatusChangedListener(networkListener)

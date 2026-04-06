@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 滚动查找工具：在当前页面自动滚动并查找包含指定文本的元素。
- * 找到后返回元素的坐标信息，避免 LLM 反复调用 get_screen_info + swipe 的循环。
+ * Scroll-to-find tool: automatically scrolls the current page and finds elements containing the specified text.
+ * Returns the element's coordinate info when found, avoiding the LLM loop of repeatedly calling get_screen_info + swipe.
  */
 public class ScrollToFindTool extends BaseTool {
 
@@ -45,8 +45,8 @@ public class ScrollToFindTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "滚动屏幕查找包含指定文本的元素。自动在指定方向上滚动并在每次滚动后搜索。"
-                + "找到后返回元素的边界和中心坐标。比手动循环调用 swipe + get_screen_info 高效得多。";
+        return "Scroll the screen to find an element containing the specified text. Automatically scrolls in the given direction and searches after each scroll."
+                + " Returns the element's bounds and center coordinates when found. Much more efficient than manually looping swipe + get_screen_info.";
     }
 
     @Override
@@ -72,40 +72,40 @@ public class ScrollToFindTool extends BaseTool {
         int maxScrolls = optionalInt(params, "max_scrolls", 10);
         maxScrolls = Math.min(Math.max(maxScrolls, 1), 20);
 
-        // 获取屏幕尺寸
+        // Get screen size
         int[] screenSize = getScreenSize();
         int screenWidth = screenSize[0];
         int screenHeight = screenSize[1];
 
-        // 滚动参数：在屏幕中间区域滚动，避开顶部状态栏和底部导航栏
+        // Scroll parameters: scroll in the middle region of the screen, avoiding the top status bar and bottom nav bar
         int centerX = screenWidth / 2;
         int scrollStartY, scrollEndY;
         if ("up".equals(direction)) {
-            // 向上滚动（内容向下移）：从上往下滑
+            // Scroll up (content moves down): swipe from top to bottom
             scrollStartY = (int) (screenHeight * 0.3);
             scrollEndY = (int) (screenHeight * 0.7);
         } else {
-            // 向下滚动（内容向上移）：从下往上滑
+            // Scroll down (content moves up): swipe from bottom to top
             scrollStartY = (int) (screenHeight * 0.7);
             scrollEndY = (int) (screenHeight * 0.3);
         }
 
-        // 先在当前屏幕查找（不滚动）
+        // First search on current screen (no scroll)
         ToolResult found = findElement(service, text);
         if (found != null) {
             return found;
         }
 
-        // 循环：滚动 → 查找
+        // Loop: scroll → find
         String lastScreenContent = getScreenSnapshot(service);
         for (int i = 0; i < maxScrolls; i++) {
-            // 执行滑动
+            // Perform swipe
             boolean swiped = service.performSwipe(centerX, scrollStartY, centerX, scrollEndY, 400);
             if (!swiped) {
                 return ToolResult.error("Swipe failed at scroll #" + (i + 1));
             }
 
-            // 等待页面稳定
+            // Wait for page to settle
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -113,13 +113,13 @@ public class ScrollToFindTool extends BaseTool {
                 return ToolResult.error("Interrupted during scroll");
             }
 
-            // 查找目标
+            // Search for target
             found = findElement(service, text);
             if (found != null) {
                 return found;
             }
 
-            // 检测是否到底/到顶（屏幕内容不再变化）
+            // Detect if we reached the bottom/top (screen content no longer changes)
             String currentScreen = getScreenSnapshot(service);
             if (currentScreen != null && currentScreen.equals(lastScreenContent)) {
                 return ToolResult.error("Element with text \"" + text + "\" not found. "
@@ -133,7 +133,7 @@ public class ScrollToFindTool extends BaseTool {
     }
 
     /**
-     * 在当前屏幕查找包含指定文本的元素，找到返回 ToolResult，没找到返回 null。
+     * Search for an element containing the specified text on the current screen. Returns ToolResult if found, null if not found.
      */
     private ToolResult findElement(ClawAccessibilityService service, String text) {
         List<AccessibilityNodeInfo> nodes = service.findNodesByText(text);
@@ -141,7 +141,7 @@ public class ScrollToFindTool extends BaseTool {
             return null;
         }
         try {
-            // 取第一个可见的节点
+            // Take the first visible node
             for (AccessibilityNodeInfo node : nodes) {
                 if (node.isVisibleToUser()) {
                     Rect bounds = new Rect();
@@ -159,7 +159,7 @@ public class ScrollToFindTool extends BaseTool {
                     return ToolResult.success(sb.toString());
                 }
             }
-            // 所有节点都不可见
+            // All nodes are out of bounds
             return null;
         } finally {
             ClawAccessibilityService.recycleNodes(nodes);
@@ -167,7 +167,7 @@ public class ScrollToFindTool extends BaseTool {
     }
 
     /**
-     * 快速获取屏幕内容的摘要，用于判断页面是否滚动到底/顶。
+     * Get a quick summary of screen content, used to detect whether the page has scrolled to the bottom/top.
      */
     private String getScreenSnapshot(ClawAccessibilityService service) {
         try {

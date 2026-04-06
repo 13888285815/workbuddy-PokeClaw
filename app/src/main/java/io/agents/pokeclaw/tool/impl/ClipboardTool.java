@@ -41,7 +41,7 @@ public class ClipboardTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "获取或设置剪贴板文本内容。action 为 'get' 读取，'set' 写入。";
+        return "Get or set clipboard text content. Use action='get' to read, action='set' to write.";
     }
 
     @Override

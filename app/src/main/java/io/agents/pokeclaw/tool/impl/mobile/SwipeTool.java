@@ -33,7 +33,7 @@ public class SwipeTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "在屏幕上从一个点滑动到另一个点。适用于滚动、下拉通知等操作。";
+        return "Swipe from one point to another on the screen. Use this for scrolling, pulling down notifications, etc.";
     }
 
     @Override

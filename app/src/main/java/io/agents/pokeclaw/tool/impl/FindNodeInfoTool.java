@@ -35,7 +35,7 @@ public class FindNodeInfoTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "通过可见文本查找元素，返回详细信息（类名、边界、属性）。适用于在交互前检查特定元素。";
+        return "Find an element by visible text and return detailed information (class name, bounds, attributes). Use this to inspect a specific element before interacting with it.";
     }
 
     @Override

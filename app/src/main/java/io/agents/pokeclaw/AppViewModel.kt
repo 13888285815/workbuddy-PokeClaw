@@ -31,7 +31,7 @@ class AppViewModel : ViewModel() {
 
     val taskOrchestrator = TaskOrchestrator(
         agentConfigProvider = { getAgentConfig() },
-        onTaskFinished = { /* 刷新 */ }
+        onTaskFinished = { /* refresh */ }
     )
 
     private val channelSetup = ChannelSetup(taskOrchestrator = taskOrchestrator)
@@ -94,7 +94,7 @@ class AppViewModel : ViewModel() {
 
 
     /**
-     * 获取亮屏锁，防止息屏后无障碍服务无法操作
+     * Acquire a wake lock to prevent the screen from turning off during accessibility operations
      */
     private fun acquireScreenWakeLock() {
         if (wakeLock?.isHeld == true) return
@@ -106,24 +106,24 @@ class AppViewModel : ViewModel() {
         ).apply {
             acquire()
         }
-        XLog.i(TAG, "亮屏锁已获取")
+        XLog.i(TAG, "Wake lock acquired")
     }
 
     /**
-     * 释放亮屏锁
+     * Release the wake lock
      */
     private fun releaseScreenWakeLock() {
         wakeLock?.let {
             if (it.isHeld) {
                 it.release()
-                XLog.i(TAG, "亮屏锁已释放")
+                XLog.i(TAG, "Wake lock released")
             }
         }
         wakeLock = null
     }
 
     /**
-     * 显示圆形悬浮窗
+     * Show the circular floating window
      */
     fun showFloatingCircle() {
         try {
@@ -138,7 +138,7 @@ class AppViewModel : ViewModel() {
     }
 
     /**
-     * 将应用带回前台
+     * Bring the app to the foreground
      */
     private fun bringAppToForeground() {
         val context = ClawApplication.instance
@@ -160,13 +160,13 @@ class AppViewModel : ViewModel() {
         try {
             val file = java.io.File(filePath)
             if (!file.exists()) {
-                XLog.w(TAG, "截图文件不存在: $filePath")
+                XLog.w(TAG, "Screenshot file does not exist: $filePath")
                 return
             }
             val imageBytes = file.readBytes()
             ChannelManager.sendImage(channel, imageBytes, messageID)
         } catch (e: Exception) {
-            XLog.e(TAG, "发送截图失败", e)
+            XLog.e(TAG, "Failed to send screenshot", e)
         }
     }
 }

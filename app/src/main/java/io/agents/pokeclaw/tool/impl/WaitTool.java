@@ -32,7 +32,7 @@ public class WaitTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "等待指定的毫秒数。适用于等待UI过渡、动画或加载完成。";
+        return "Wait for the specified number of milliseconds. Use this to wait for UI transitions, animations, or loading to complete.";
     }
 
     @Override

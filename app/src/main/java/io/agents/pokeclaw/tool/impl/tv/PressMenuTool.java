@@ -27,7 +27,7 @@ public class PressMenuTool extends BaseKeyTool {
 
     @Override
     public String getDescriptionCN() {
-        return "按下遥控器菜单键。在当前应用中打开上下文菜单或设置。";
+        return "Press the remote control menu key. Opens the context menu or settings in the current app.";
     }
 
     @Override

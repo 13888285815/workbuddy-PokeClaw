@@ -7,7 +7,7 @@ import android.os.Bundle
 import android.view.View
 
 /**
- * Activity基类
+ * Base Activity class
  */
 abstract class AbstractBaseActivity : BaseActivity() {
     protected open var TAG: String? = this::class.java.simpleName
@@ -23,18 +23,18 @@ abstract class AbstractBaseActivity : BaseActivity() {
 
 
     /**
-     * 设置布局
+     * Set layout
      */
     open abstract fun setContentLayout(): View
 
     /**
-     * 初始化布局
+     * Initialize layout
      * @param savedInstanceState Bundle?
      */
     abstract fun initView(savedInstanceState: Bundle?)
 
     /**
-     * 初始化数据
+     * Initialize data
      */
     open fun initData() {
 

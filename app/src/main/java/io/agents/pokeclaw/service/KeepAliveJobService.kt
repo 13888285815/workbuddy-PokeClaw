@@ -12,15 +12,15 @@ import android.content.Context
 import io.agents.pokeclaw.utils.XLog
 
 /**
- * 定时守护 JobService
- * 每 15 分钟检查前台服务是否存活，若被杀则重新拉起
+ * Periodic watchdog JobService
+ * Checks every 15 minutes whether the foreground service is alive; restarts it if killed
  */
 class KeepAliveJobService : JobService() {
 
     companion object {
         private const val TAG = "KeepAliveJob"
         private const val JOB_ID = 10086
-        private const val INTERVAL_MS = 15 * 60 * 1000L // 15 分钟
+        private const val INTERVAL_MS = 15 * 60 * 1000L // 15 minutes
 
         fun schedule(context: Context) {
             val scheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler

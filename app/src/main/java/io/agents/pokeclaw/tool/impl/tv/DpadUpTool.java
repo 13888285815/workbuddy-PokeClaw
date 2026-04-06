@@ -27,7 +27,7 @@ public class DpadUpTool extends BaseKeyTool {
 
     @Override
     public String getDescriptionCN() {
-        return "按下遥控器上方向键。将焦点移动到当前聚焦元素上方的元素。";
+        return "Press the remote control up directional key. Moves focus to the element above the currently focused element.";
     }
 
     @Override

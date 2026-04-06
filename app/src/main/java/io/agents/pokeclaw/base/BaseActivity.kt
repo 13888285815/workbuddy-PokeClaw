@@ -18,7 +18,7 @@ import io.agents.pokeclaw.R
 
 /**
  *
- * 屏幕适配单位用的是pt, 如果用dp在有些设备上会导致toast换行位置不正确
+ * Screen adaptation uses pt; using dp on some devices causes toast line breaks at incorrect positions
  */
 open class BaseActivity : AppCompatActivity() {
 
@@ -31,12 +31,12 @@ open class BaseActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         applyStatusBarMode()
 
-        // 统一处理状态栏高度 - 在布局加载后应用
+        // Handle status bar height uniformly - applied after layout is loaded
         applyStatusBarPadding()
     }
 
     /**
-     * 主题切换时自动回调，更新状态栏文字颜色
+     * Auto-callback on theme switch to update status bar text color
      */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
@@ -44,9 +44,9 @@ open class BaseActivity : AppCompatActivity() {
     }
 
     /**
-     * 根据当前主题模式设置状态栏文字颜色
-     * 浅色主题 → 深色文字（light mode）
-     * 深色主题 → 浅色文字（dark mode）
+     * Set status bar text color based on current theme mode
+     * Light theme → dark text (light mode)
+     * Dark theme → light text (dark mode)
      */
     private fun applyStatusBarMode() {
         val isNightMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
@@ -54,8 +54,8 @@ open class BaseActivity : AppCompatActivity() {
     }
 
     /**
-     * 为根视图添加状态栏高度的顶部 padding
-     * 子类可通过重写 isApplyStatusBarPadding() 来禁用
+     * Add top padding equal to the status bar height to the root view
+     * Subclasses can disable this by overriding isApplyStatusBarPadding()
      */
     private fun applyStatusBarPadding() {
         window.decorView.post {
@@ -65,8 +65,8 @@ open class BaseActivity : AppCompatActivity() {
     }
 
     /**
-     * 为根视图应用状态栏高度 padding
-     * 如果布局已经处理了 insets，可以重写此方法自定义行为
+     * Apply status bar height padding to the root view
+     * If the layout already handles insets, override this method to customize behavior
      */
     protected open fun applyPaddingToRootView(rootView: View) {
         if (!isApplyStatusBarPadding()) return
@@ -74,19 +74,19 @@ open class BaseActivity : AppCompatActivity() {
         val statusBarHeight = BarUtils.getStatusBarHeight()
         val existingPaddingTop = rootView.paddingTop
 
-        // 只在没有 padding 或 padding 小于状态栏高度时才添加
+        // Only add padding if there is none or it is smaller than the status bar height
         if (existingPaddingTop < statusBarHeight) {
             rootView.updatePadding(top = statusBarHeight)
         }
     }
 
     /**
-     * 子类可重写此方法来禁用自动添加状态栏高度
+     * Subclasses can override this method to disable automatic status bar height padding
      */
     protected open fun isApplyStatusBarPadding(): Boolean = true
 
     /**
-     * 屏幕适配-设计稿尺寸
+     * Screen adaptation - design spec size
      */
     open fun getDesignWidth(): Int {
         return 402

@@ -49,7 +49,7 @@ public class SendMessageTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "透過任何通訊 App 發送訊息給聯絡人（WhatsApp、Telegram、Messages 等）。";
+        return "Send a text message to a contact via any messaging app (WhatsApp, Telegram, Messages, etc).";
     }
 
     @Override

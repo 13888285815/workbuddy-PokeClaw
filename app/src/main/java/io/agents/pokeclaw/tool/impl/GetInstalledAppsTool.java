@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 获取设备上已安装的可启动应用列表（应用名 + 包名）。
- * 当不确定目标应用的包名时，先调用此工具获取列表，再使用 open_app 打开。
+ * Get the list of installed launchable apps on the device (app name + package name).
+ * When the target app's package name is unknown, call this tool first to get the list, then use open_app to open it.
  */
 public class GetInstalledAppsTool extends BaseTool {
 
@@ -41,7 +41,7 @@ public class GetInstalledAppsTool extends BaseTool {
 
     @Override
     public String getDescriptionCN() {
-        return "获取设备上所有已安装的可启动应用列表，包括应用名和包名。当不确定目标应用的包名时使用此工具，然后使用 open_app 打开。";
+        return "Get a list of all installed launchable apps on the device, including app name and package name. Use this tool when the target app's package name is unknown, then use open_app to open it.";
     }
 
     @Override
