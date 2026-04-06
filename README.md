@@ -18,15 +18,16 @@ Your phone, on autopilot. No cloud, no API keys, no data leaving your device.
 
 PokeClaw runs Gemma 4 (2.3B) entirely on your Android phone and controls it through accessibility. Tell it what to do in plain language, it figures out the taps, swipes, and typing.
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/chat.png" width="200" />
+  <img src="screenshots/task.png" width="200" />
+  <img src="screenshots/settings.png" width="200" />
+  <img src="screenshots/model.png" width="200" />
+</p>
+
 ## What it does
-
-**Task mode** - give it a job, watch it work:
-
-https://github.com/agents-io/PokeClaw/raw/main/demo/hi-demo.mp4
-
-**Auto-reply** - monitors your messages and replies on your behalf:
-
-https://github.com/agents-io/PokeClaw/raw/main/demo/monitor-demo.mp4
 
 The model picks the right tool, fills in the parameters, and executes. You don't configure anything per-app. It just reads the screen and acts.
 
