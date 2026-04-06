@@ -102,6 +102,8 @@ PokeClaw exists because of [Gemma 4](https://blog.google/innovation-and-ai/techn
 
 Also inspired by the [OpenClaw](https://github.com/openclaw/openclaw) community 🦞 for proving that AI agents that actually do things are what people want.
 
+And thank you to [Claude Code](https://claude.ai/code) by Anthropic. I'm a CS dropout with zero Android development experience. Claude Code made it possible for me to go from nothing to a working app in two nights. The future is wild.
+
 ## License
 
 Apache 2.0
