@@ -102,6 +102,20 @@ The LLM has access to these tools and picks them autonomously:
 | `take_screenshot` | Capture screen |
 | `finish` | Signal task completion |
 
+These tools are generic — they work with any app, any contact, any language. The LLM picks the right tool and fills in the parameters from your request.
+
+## Tools + Skills
+
+A 2.3B on-device model is not GPT-4. It can follow instructions well, but it's not great at deciding *which* instructions to follow. When you say "send hi to Mom on WhatsApp", the model sometimes enables auto-reply instead of sending a message. It picks the wrong tool.
+
+The auto-reply feature works reliably because there's a predefined playbook behind it: open the chat → read the conversation on screen → generate a reply → send it → go back to home screen. The model doesn't have to figure out the workflow. It follows the recipe.
+
+We're building this into a general system called **Skills** — predefined workflows that chain multiple tools together, similar to [Claude Code's skill system](https://docs.anthropic.com/en/docs/claude-code/skills). Each skill defines what tools to use, in what order, with what parameters. The LLM's job is to follow the playbook, not improvise.
+
+With enough generic tools and well-designed skills, the model can handle complex multi-step tasks: catch a notification → open an email → read it → draft a reply → attach a file → send it. The tools do the heavy lifting, the skill defines the workflow, the LLM connects the dots.
+
+The tools and skills are both extensible. As on-device models get smarter, the skills become less necessary — the model will eventually figure out the right workflow on its own. Until then, skills are how we get reliable automation out of a small local model.
+
 🌐 **Landing Page:** https://agents-io.github.io/PokeClaw/
 
 ## Download
