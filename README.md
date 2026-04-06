@@ -31,9 +31,9 @@ https://github.com/user-attachments/assets/18d49148-c744-46a5-98a2-0f8320f00d19
 
 
 
-Your phone, on autopilot. No cloud, no API keys, no data leaving your device.
+**The first working app that uses Gemma 4 to autonomously control an Android phone. Fully on-device, no cloud.**
 
-PokeClaw runs Gemma 4 (2.3B) entirely on your Android phone and controls it through accessibility. Tell it what to do in plain language, it figures out the taps, swipes, and typing.
+Your phone, on autopilot. No API keys, no subscription, no data leaving your device. PokeClaw runs Gemma 4 (2.3B) entirely on your Android phone and controls it through the Accessibility API. Tell it what to do in plain language, it reads the screen, figures out the taps, swipes, and typing, and executes. The entire agentic pipeline runs on your phone's CPU. Nothing phones home.
 
 ## The Story
 
