@@ -11,3 +11,4 @@ local.properties
 /.claude/
 /.idea/
 *.mp4
+!docs/*.mp4
