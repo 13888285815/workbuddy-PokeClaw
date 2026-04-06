@@ -18,6 +18,9 @@ As far as I know, this is the first working app built on Gemma 4 that can autono
 
 The entire pipeline is a closed loop inside your device. No Wifi needed,No monthly billing for the API keys.
 
+This is a 2-day open-source prototype, not a polished consumer app.
+If it works on your device, amazing. If it breaks, PRs are welcome.
+
 
 ```
 Everyone else:  Phone → Internet → Cloud API → Internet → Phone
