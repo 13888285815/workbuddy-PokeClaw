@@ -401,7 +401,7 @@ class SettingsActivity : BaseActivity() {
             },
             showDivider = false
         ).apply {
-            setTrailingText("agents.io")
+            setTrailingText("ithiria894")
         }
     }
 
