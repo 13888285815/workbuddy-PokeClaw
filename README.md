@@ -22,6 +22,8 @@ https://github.com/user-attachments/assets/18d49148-c744-46a5-98a2-0f8320f00d19
 > - **Snapdragon 7+ Gen 2+** (mid-range with GPU)
 >
 > On these devices, warmup drops to seconds. Same model, better hardware.
+>
+> That said, the fact that a 2.3B model can autonomously control a phone running purely on CPU is already pretty impressive. GPU just makes it faster.
 
 
 
