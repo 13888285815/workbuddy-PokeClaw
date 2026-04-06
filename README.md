@@ -8,9 +8,9 @@
 
 # PokeClaw (PocketClaw) - A Pocket Versoin Inspired By OpenClaw
 
-Gemma 4 launched days ago.  
+Gemma 4 launched 4 days ago.  
 
-Most people ship demos. I wanted to know if it could actually drive a phone.
+I wanted to know if it could actually drive a phone.
 
 So I pulled two all-nighters and built it.
 
