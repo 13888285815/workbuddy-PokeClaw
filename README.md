@@ -21,7 +21,7 @@ The entire pipeline is a closed loop inside your device. The model reads the scr
 
 ```
 Everyone else:  Phone → Internet → Cloud API → Internet → Phone
-                       💳 API key required. Monthly bill attached.
+                       💳Credit card needed, API key required. Monthly bill attached.
 
 PokeClaw:       Phone → LLM → Phone
                        That's it. No internet. No API key. No bill.
