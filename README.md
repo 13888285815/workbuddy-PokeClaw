@@ -70,3 +70,5 @@ No API keys. No cloud config. No account.
 ## License
 
 Apache 2.0
+
+Contributors sign our CLA before their first PR is merged.
