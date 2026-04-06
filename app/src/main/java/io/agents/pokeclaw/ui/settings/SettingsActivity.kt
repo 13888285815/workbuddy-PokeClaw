@@ -396,7 +396,9 @@ class SettingsActivity : BaseActivity() {
         aboutGroup.addMenuItem(
             leadingIcon = android.R.drawable.ic_menu_compass,
             title = "Built by",
-            onClick = { },
+            onClick = {
+                startActivity(Intent(Intent.ACTION_VIEW, "https://github.com/ithiria894".toUri()))
+            },
             showDivider = false
         ).apply {
             setTrailingText("agents.io")
