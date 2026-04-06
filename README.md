@@ -9,11 +9,12 @@
 # PokeClaw (PocketClaw) - A Pocket Versoin Of OpenClaw
 
 Gemma 4 has only been out for a few days.  
-This is a working Android app built on top of it.
+Most people ship demos. I wanted to know if it could actually drive a phone.
+So I built one.
 
-PokeClaw brings local AI agents onto your phone — combining on-device LLMs with Android Accessibility to create a controllable, private mobile agent.
+As far as I know, this is the first working app built on Gemma 4 that can autonomously control an Android phone.
 
-Built as an experiment. Turned into a working system.
+The entire pipeline is a closed loop inside your device. The model reads the screen, picks a tool, executes, reads the result, loops. Nothing leaves.
 
 https://github.com/user-attachments/assets/c713e227-7581-4475-acd4-0480128c8ec8
 
