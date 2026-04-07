@@ -390,6 +390,7 @@ class DefaultAgentService : AgentService {
         val maxIterations = config.maxIterations
         val loopHistory = LinkedList<RoundFingerprint>()
         var lastScreenHash = 0
+        var previousScreenTexts: Set<String> = emptySet()
 
         while (iterations < maxIterations && !cancelled.get()) {
             iterations++
@@ -498,9 +499,18 @@ class DefaultAgentService : AgentService {
                             // Update lastScreenHash for loop detection
                             lastScreenHash = screenAfter.data!!.hashCode()
                             XLog.i(TAG, "Opt3: auto-attached screen after $toolName (${screenAfter.data!!.length} chars)")
-                            // Build enriched result JSON inline — ToolResult has private constructor
+                            // Screen diff: extract text lines and compare with previous
+                            val currentTexts = screenAfter.data!!.lines()
+                                .map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+                            val added = currentTexts - previousScreenTexts
+                            val removed = previousScreenTexts - currentTexts
+                            previousScreenTexts = currentTexts
+                            val diffSection = buildString {
+                                if (added.isNotEmpty()) append("\nNew on screen: ${added.take(10).joinToString(", ")}")
+                                if (removed.isNotEmpty()) append("\nGone from screen: ${removed.take(10).joinToString(", ")}")
+                            }
                             val baseData = result.data ?: ""
-                            val enrichedData = "$baseData\n\nScreen after action:\n${screenAfter.data}"
+                            val enrichedData = "$baseData\n\nScreen after action:\n${screenAfter.data}$diffSection"
                             val enriched = if (result.isSuccess) ToolResult.success(enrichedData)
                                            else ToolResult.error(result.error ?: "")
                             GSON.toJson(enriched)

@@ -471,11 +471,12 @@ class LocalLlmClient(private val config: AgentConfig) : LlmClient {
     companion object {
         private const val TAG = "LocalLlmClient"
 
-        private const val LOCAL_SYSTEM_PROMPT = """You control an Android phone via tools. Screen shows elements as: "text" [flags] (x,y) where (x,y) is tap target.
+        private const val LOCAL_SYSTEM_PROMPT = """You control an Android phone via tools. Screen shows elements as: [n1] "text" [flags] (x,y) where n1 is the node ID and (x,y) is the tap target.
 
 Rules:
 - Use open_app(app_name) to open apps, e.g. open_app("Camera"), open_app("WhatsApp")
-- Use tap(x,y) to tap buttons/elements at their (x,y) coordinates
+- Use tap_node(node_id) to tap elements by node ID (preferred), e.g. tap_node("n3")
+- Use tap(x,y) only when you know exact coordinates and no node ID is available
 - Use input_text(text) to type into focused editable fields
 - Use system_key(key) with key="back","home","enter" for navigation
 - Use finish(summary) when task is complete

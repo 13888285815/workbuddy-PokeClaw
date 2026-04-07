@@ -57,6 +57,7 @@ object ToolRegistry {
 
     private fun registerMobileTools() {
         register(TapTool())
+        register(TapNodeTool())
         register(LongPressTool())
         register(SwipeTool())
         register(ScrollToFindTool())
@@ -79,6 +80,7 @@ object ToolRegistry {
         return try {
             tool.executeWithWaitAfter(params)
         } catch (e: Exception) {
+            io.agents.pokeclaw.utils.XLog.e("ToolRegistry", "Tool '$name' execution failed with params=$params", e)
             ToolResult.error("Tool execution failed: ${e.message}")
         }
     }

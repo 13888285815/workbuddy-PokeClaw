@@ -28,12 +28,12 @@ public class GetScreenInfoTool extends BaseTool {
 
     @Override
     public String getDescriptionEN() {
-        return "Get the current screen's UI hierarchy tree, including all visible elements with their properties (text, id, bounds, clickable, etc.). Use this to understand what is currently displayed on the screen.";
+        return "Get the current screen's UI elements. Each element has a node ID (e.g. [n3]) that can be used with tap_node. Do not cache this result — node IDs change on each call.";
     }
 
     @Override
     public String getDescriptionCN() {
-        return "Get the UI hierarchy tree of the current screen, including attributes of all visible elements (text, ID, bounds, clickable state, etc.). Use this to understand what is currently displayed on screen.";
+        return "Get the current screen's UI elements. Each element has a node ID (e.g. [n3]) that can be used with tap_node. Do not cache this result — node IDs change on each call.";
     }
 
     @Override

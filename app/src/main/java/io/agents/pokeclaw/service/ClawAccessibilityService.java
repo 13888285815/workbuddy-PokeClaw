@@ -221,14 +221,25 @@ public class ClawAccessibilityService extends AccessibilityService {
     /**
      * Collects a tree representation of the current screen for AI analysis.
      */
+    /** Node ID → center coordinates mapping for tap_node tool */
+    private final java.util.concurrent.ConcurrentHashMap<String, int[]> nodeIdMap = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.atomic.AtomicInteger nodeCounter = new java.util.concurrent.atomic.AtomicInteger(0);
+
     public String getScreenTree() {
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root == null) {
             return null;
         }
+        nodeIdMap.clear();
+        nodeCounter.set(0);
         StringBuilder sb = new StringBuilder();
         buildNodeTree(root, sb, 0);
         return sb.toString();
+    }
+
+    /** Get center coordinates for a node ID (e.g. "n3"). Returns null if not found. */
+    public int[] getNodeCoordinates(String nodeId) {
+        return nodeIdMap.get(nodeId);
     }
 
     /**
@@ -277,14 +288,18 @@ public class ClawAccessibilityService extends AccessibilityService {
         if (isMeaningful) {
             Rect bounds = new Rect();
             node.getBoundsInScreen(bounds);
-            // Ultra-compact format: "text" [flags] (cx,cy)
-            // Center coordinates instead of full bounds — LLM only needs tap target
             int cx = (bounds.left + bounds.right) / 2;
             int cy = (bounds.top + bounds.bottom) / 2;
 
-            // Add indentation for hierarchy context
+            // Assign node ID for tap_node tool
+            String nodeId = "n" + nodeCounter.incrementAndGet();
+            nodeIdMap.put(nodeId, new int[]{cx, cy});
+
+            // Format: [n1] "text" tap edit (cx,cy)
             StringBuilder line = new StringBuilder();
             for (int d = 0; d < Math.min(depth, 4); d++) line.append("  ");
+
+            line.append("[").append(nodeId).append("] ");
 
             if (hasText) {
                 CharSequence text = node.getText();
@@ -298,7 +313,6 @@ public class ClawAccessibilityService extends AccessibilityService {
             if (node.isCheckable()) line.append(node.isChecked() ? " on" : " off");
             line.append(" (").append(cx).append(",").append(cy).append(")");
 
-            // Only output if has any content
             if (line.length() > 0) {
                 sb.append(line).append("\n");
             }
