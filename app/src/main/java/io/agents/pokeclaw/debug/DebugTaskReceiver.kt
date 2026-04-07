@@ -17,9 +17,13 @@ import io.agents.pokeclaw.utils.XLog
  * Usage:
  *   adb shell am broadcast -a io.agents.pokeclaw.DEBUG_TASK --es task "open my camera"
  *
- * Set Cloud LLM config:
+ * Set Cloud LLM config (any provider):
  *   adb shell am broadcast -a io.agents.pokeclaw.DEBUG_TASK --es task "config:" \
- *     --es api_key "sk-..." --es base_url "https://api.openai.com/v1" --es model_name "gpt-4o-mini"
+ *     --es api_key "sk-..." --es model_name "gpt-4o-mini"
+ *
+ * With custom base URL (OpenRouter, Groq, Ollama, etc.):
+ *   adb shell am broadcast -a io.agents.pokeclaw.DEBUG_TASK --es task "config:" \
+ *     --es api_key "sk-..." --es base_url "https://api.openrouter.ai/v1" --es model_name "google/gemini-2.5-flash"
  */
 class DebugTaskReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -33,9 +37,13 @@ class DebugTaskReceiver : BroadcastReceiver() {
                 val baseUrl = intent.getStringExtra("base_url")
                 val modelName = intent.getStringExtra("model_name")
                 if (apiKey != null) KVUtils.setLlmApiKey(apiKey)
-                if (baseUrl != null) KVUtils.setLlmBaseUrl(baseUrl)
                 if (modelName != null) KVUtils.setLlmModelName(modelName)
                 KVUtils.setLlmProvider("OPENAI")
+                // Set base URL: explicit > provider default > OpenAI default
+                val resolvedBaseUrl = baseUrl
+                    ?: io.agents.pokeclaw.agent.CloudProvider.findProviderForModel(modelName ?: "")?.defaultBaseUrl
+                    ?: "https://api.openai.com/v1"
+                KVUtils.setLlmBaseUrl(resolvedBaseUrl)
                 val vm = io.agents.pokeclaw.ClawApplication.appViewModelInstance
                 vm.updateAgentConfig()
                 vm.initAgent()
