@@ -68,55 +68,48 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- 任务执行中状态 -->
+    <!-- 任务执行中状态 (pill shape with token info) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardRunning"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
         app:cardCornerRadius="28pt"
         app:cardElevation="4pt"
         app:cardBackgroundColor="@color/colorBrandPrimary"
         android:visibility="gone">
 
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="14pt"
+            android:paddingEnd="14pt"
+            android:minWidth="56pt">
 
-            <!-- 旋转的进度环 -->
+            <!-- Progress spinner (small) -->
             <ProgressBar
                 android:id="@+id/progressRunning"
-                android:layout_width="56pt"
-                android:layout_height="56pt"
-                android:layout_gravity="center"
+                android:layout_width="16pt"
+                android:layout_height="16pt"
                 android:indeterminate="true"
                 android:indeterminateTint="@color/colorBrandOnPrimary"
                 style="@style/Widget.AppCompat.ProgressBar" />
 
-            <!-- 渠道 Logo -->
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/ivChannelLogo"
-                android:layout_width="20pt"
-                android:layout_height="20pt"
-                android:layout_gravity="top|center_horizontal"
-                android:layout_marginTop="12pt"
-                android:contentDescription="@string/cd_channel_logo"
-                android:src="@drawable/ic_launcher"
-                android:scaleType="centerCrop"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Launcher.Circle" />
-
-            <!-- 轮数显示 -->
+            <!-- Step | Tokens | Cost -->
             <TextView
-                android:id="@+id/tvRound"
+                android:id="@+id/tvTokenStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center|bottom"
-                android:layout_marginBottom="8pt"
-                android:text="1"
+                android:layout_marginStart="6pt"
+                android:text="Step 1"
                 android:textColor="@color/colorBrandOnPrimary"
-                android:textSize="10pt"
-                android:textStyle="bold" />
+                android:textSize="11pt"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:singleLine="true" />
 
-        </FrameLayout>
+        </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 

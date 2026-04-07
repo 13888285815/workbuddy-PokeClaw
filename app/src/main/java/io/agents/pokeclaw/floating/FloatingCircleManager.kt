@@ -215,6 +215,37 @@ object FloatingCircleManager {
     }
 
     /**
+     * Update token monitor display on the running pill.
+     * Call this after each agent loop iteration.
+     *
+     * @param step current step number
+     * @param formattedTokens e.g. "33K"
+     * @param formattedCost e.g. "$0.01"
+     * @param tokenState NORMAL/CAUTION/WARNING/CRITICAL
+     */
+    fun updateTokenStatus(step: Int, formattedTokens: String, formattedCost: String, tokenState: io.agents.pokeclaw.agent.TokenMonitor.State) {
+        ThreadUtils.runOnUiThread {
+            currentRound = step
+            val view = EasyFloat.getFloatView(FLOAT_TAG) ?: return@runOnUiThread
+            val tvStatus = view.findViewById<TextView>(R.id.tvTokenStatus) ?: return@runOnUiThread
+            tvStatus.text = "Step $step | $formattedTokens | $formattedCost"
+
+            // Update pill color based on token state
+            val cardRunning = view.findViewById<com.google.android.material.card.MaterialCardView>(R.id.cardRunning) ?: return@runOnUiThread
+            val colorRes = when (tokenState) {
+                io.agents.pokeclaw.agent.TokenMonitor.State.NORMAL -> R.color.colorBrandPrimary
+                io.agents.pokeclaw.agent.TokenMonitor.State.CAUTION -> R.color.colorWarningPrimary
+                io.agents.pokeclaw.agent.TokenMonitor.State.WARNING -> R.color.colorWarningPrimary
+                io.agents.pokeclaw.agent.TokenMonitor.State.CRITICAL -> R.color.colorErrorPrimary
+            }
+            try {
+                val app = appRef ?: return@runOnUiThread
+                cardRunning.setCardBackgroundColor(app.getColor(colorRes))
+            } catch (_: Exception) {}
+        }
+    }
+
+    /**
      * Switch to task completed state (auto-resets to IDLE after 5 seconds)
      */
     fun setSuccessState() {
@@ -289,15 +320,12 @@ object FloatingCircleManager {
             }
             State.RUNNING -> {
                 cancelNotifyCollapse()
-                // Collapse back to fixed circle
-                setFloatRootWidth(view, getCircleWidth(view))
+                // Expand to pill shape for token display
+                setFloatRootWidth(view, WindowManager.LayoutParams.WRAP_CONTENT)
                 cardRunning?.visibility = View.VISIBLE
-                // Update round number display
-                val tvRound = view.findViewById<TextView>(R.id.tvRound)
-                tvRound?.text = currentRound.toString()
-                // Update channel logo
-                val ivChannelLogo = view.findViewById<ImageView>(R.id.ivChannelLogo)
-                ivChannelLogo?.setImageResource(getChannelIcon(currentChannel))
+                // Update token status text
+                val tvStatus = view.findViewById<TextView>(R.id.tvTokenStatus)
+                tvStatus?.text = "Step ${currentRound}"
             }
             State.SUCCESS -> {
                 cancelNotifyCollapse()

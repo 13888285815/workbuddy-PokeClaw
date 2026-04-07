@@ -163,6 +163,15 @@ class TaskOrchestrator(
                 ForegroundService.updateTaskStatus(ClawApplication.instance, msg)
             }
 
+            override fun onTokenUpdate(status: io.agents.pokeclaw.agent.TokenMonitor.Status) {
+                FloatingCircleManager.updateTokenStatus(
+                    step = status.step,
+                    formattedTokens = status.formattedTokens,
+                    formattedCost = status.formattedCost,
+                    tokenState = status.state
+                )
+            }
+
             override fun onContent(round: Int, content: String) {
                 if (content.isNotEmpty()) {
                     roundBuffer.append(content)

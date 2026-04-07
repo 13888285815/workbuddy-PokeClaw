@@ -421,6 +421,7 @@ class DefaultAgentService : AgentService {
                 outputTokens = llmResponse.tokenUsage?.outputTokenCount(),
                 totalTokenCount = llmResponse.tokenUsage?.totalTokenCount()
             )
+            callback.onTokenUpdate(tokenMonitor.getStatus())
 
             // Budget check
             val tokenStatus = tokenMonitor.getStatus()
