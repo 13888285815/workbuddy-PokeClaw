@@ -391,6 +391,7 @@ class DefaultAgentService : AgentService {
         val loopHistory = LinkedList<RoundFingerprint>()
         var lastScreenHash = 0
         var previousScreenTexts: Set<String> = emptySet()
+        val tokenMonitor = TokenMonitor(config.modelName)
 
         while (iterations < maxIterations && !cancelled.get()) {
             iterations++
@@ -411,6 +412,12 @@ class DefaultAgentService : AgentService {
 
             // Accumulate token usage
             llmResponse.tokenUsage?.totalTokenCount()?.let { totalTokens += it }
+            tokenMonitor.record(
+                step = iterations,
+                inputTokens = llmResponse.tokenUsage?.inputTokenCount(),
+                outputTokens = llmResponse.tokenUsage?.outputTokenCount(),
+                totalTokenCount = llmResponse.tokenUsage?.totalTokenCount()
+            )
 
             // DEBUG: log raw LLM response for tool calling diagnosis
             XLog.i(TAG, "runAgentLoop iter=$iterations response.text=${llmResponse.text?.take(500)}")
