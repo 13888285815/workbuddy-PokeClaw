@@ -178,7 +178,8 @@ Every issue makes this better. Every star helps more people find it.
 
 ## Changelog
 
-### v0.3.1 (2026-04-07)
+### v0.3.2 (2026-04-07)
+- **Security fix.** Debug task receivers now disabled in release builds. External apps can no longer trigger tasks via broadcast.
 - **Security fix.** The LAN config server was binding to all network interfaces, exposing API keys to anyone on the same WiFi. Now binds to localhost only.
 
 
