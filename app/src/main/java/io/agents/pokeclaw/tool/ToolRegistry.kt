@@ -61,6 +61,7 @@ object ToolRegistry {
         register(LongPressTool())
         register(SwipeTool())
         register(ScrollToFindTool())
+        register(FindAndTapTool())
         register(SendMessageTool())
         register(AutoReplyTool())
     }
