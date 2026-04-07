@@ -5,6 +5,7 @@ package io.agents.pokeclaw.agent
 
 import android.content.Context
 import android.content.Intent
+import io.agents.pokeclaw.agent.skill.SkillRegistry
 import io.agents.pokeclaw.tool.ToolRegistry
 import io.agents.pokeclaw.utils.XLog
 
@@ -63,12 +64,16 @@ class PipelineRouter(private val context: Context) {
             }
         }
 
-        // Tier 1 didn't match → fall through to Tier 2 (classification)
-        // Note: Tier 2 requires an LLM call, which is done by the caller
-        // (DefaultAgentService or TaskOrchestrator). This method returns
-        // AgentLoop as the default fallback — the caller can optionally
-        // run TaskClassifier first for smarter routing.
-        XLog.i(TAG, "Tier 1 no match, falling through to agent loop: $task")
+        // Tier 1.5: Skill trigger matching (deterministic, 0 LLM calls)
+        val matchedSkill = SkillRegistry.findByTrigger(task)
+        if (matchedSkill != null) {
+            val params = extractSkillParams(task, matchedSkill.triggerPatterns)
+            XLog.i(TAG, "Tier 1.5 skill match: ${matchedSkill.id} params=$params")
+            return Route.Skill(matchedSkill.id, params, matchedSkill.description)
+        }
+
+        // No deterministic match → Tier 3 agent loop
+        XLog.i(TAG, "No deterministic match, falling through to agent loop: $task")
         return Route.AgentLoop(task)
     }
 
@@ -92,6 +97,24 @@ class PipelineRouter(private val context: Context) {
         val result = ToolRegistry.getInstance().executeTool(toolName, params)
         XLog.i(TAG, "Executed tool: $toolName → ${if (result.isSuccess) "success" else result.error}")
         return result.data ?: result.error ?: ""
+    }
+
+    /**
+     * Extract parameter values from a task string using trigger patterns.
+     * E.g., "search for cat videos" + pattern "search for {query}" → {"query": "cat videos"}
+     */
+    private fun extractSkillParams(task: String, patterns: List<String>): Map<String, String> {
+        val lower = task.lowercase()
+        for (pattern in patterns) {
+            val paramNames = Regex("\\{(\\w+)\\}").findAll(pattern).map { it.groupValues[1] }.toList()
+            val regexStr = pattern.lowercase()
+                .replace(Regex("\\{\\w+\\}"), "(.+)")
+            val match = Regex(regexStr).find(lower)
+            if (match != null && match.groupValues.size > 1) {
+                return paramNames.zip(match.groupValues.drop(1)).toMap()
+            }
+        }
+        return emptyMap()
     }
 
     companion object {

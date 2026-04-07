@@ -158,15 +158,19 @@ class TaskOrchestrator(
                 XLog.i(TAG, "Pipeline Tier 2: Skill — ${route.skillId}")
                 val skill = SkillRegistry.findById(route.skillId)
                 if (skill != null) {
-                    val skillResult = skillExecutor.execute(skill, route.params) { step, total, desc ->
-                        taskProgressCallback?.invoke("Step $step/$total: $desc")
-                        ForegroundService.updateTaskStatus(ClawApplication.instance, desc)
-                    }
-                    ChannelManager.sendMessage(channel, skillResult.message, messageID)
-                    releaseTask()
-                    if (skillResult.success) FloatingCircleManager.setSuccessState()
-                    else FloatingCircleManager.setErrorState()
-                    onTaskFinished()
+                    FloatingCircleManager.showTaskNotify(task, channel)
+                    Thread({
+                        val skillResult = skillExecutor.execute(skill, route.params) { step, total, desc ->
+                            taskProgressCallback?.invoke("Step $step/$total: $desc")
+                            ForegroundService.updateTaskStatus(ClawApplication.instance, desc)
+                        }
+                        ChannelManager.sendMessage(channel, skillResult.message, messageID)
+                        releaseTask()
+                        if (skillResult.success) FloatingCircleManager.setSuccessState()
+                        else FloatingCircleManager.setErrorState()
+                        ForegroundService.resetToIdle(ClawApplication.instance)
+                        onTaskFinished()
+                    }, "skill-executor").start()
                     return
                 }
                 XLog.w(TAG, "Skill ${route.skillId} not found, falling through to agent loop")

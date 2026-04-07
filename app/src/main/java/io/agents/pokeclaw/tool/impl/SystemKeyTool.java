@@ -29,12 +29,12 @@ public class SystemKeyTool extends BaseTool {
 
     @Override
     public String getDescriptionEN() {
-        return "Press a system key. Supported keys: back (navigate back), home (go to home screen), recent_apps (open task switcher), notifications (expand notification shade), collapse_notifications (collapse notification/quick settings), lock_screen (lock screen, Android 9+), unlock_screen (wake up and unlock screen).";
+        return "Press a system key. Supported keys: back (navigate back), home (go to home screen), recent_apps (open task switcher), notifications (expand notification shade), collapse_notifications (collapse notification/quick settings), lock_screen (lock screen, Android 9+), unlock_screen (wake up and unlock screen), enter (press Enter/submit), tab (press Tab).";
     }
 
     @Override
     public String getDescriptionCN() {
-        return "Press a system key. Supported keys: back (go back), home (go to home screen), recent_apps (open recent tasks), notifications (expand notification bar), collapse_notifications (collapse notification bar/quick settings), lock_screen (lock screen, requires Android 9+), unlock_screen (wake and unlock screen).";
+        return "Press a system key. Supported keys: back (go back), home (go to home screen), recent_apps (open recent tasks), notifications (expand notification bar), collapse_notifications (collapse notification bar/quick settings), lock_screen (lock screen, requires Android 9+), unlock_screen (wake and unlock screen), enter (press Enter/confirm), tab (press Tab).";
     }
 
     @Override
@@ -43,7 +43,7 @@ public class SystemKeyTool extends BaseTool {
                 new ToolParameter(
                         "key",
                         "string",
-                        "The system key to press. Must be one of: back, home, recent_apps, notifications, collapse_notifications, lock_screen, unlock_screen.",
+                        "The system key to press. Must be one of: back, home, recent_apps, notifications, collapse_notifications, lock_screen, unlock_screen, enter, tab.",
                         true
                 )
         );
@@ -89,8 +89,22 @@ public class SystemKeyTool extends BaseTool {
                 success = service.unlockScreen();
                 successMsg = "Screen unlock requested";
                 break;
+            case "enter":
+                try {
+                    Runtime.getRuntime().exec(new String[]{"input", "keyevent", String.valueOf(android.view.KeyEvent.KEYCODE_ENTER)}).waitFor();
+                    success = true;
+                } catch (Exception e) { success = false; }
+                successMsg = "Pressed Enter key";
+                break;
+            case "tab":
+                try {
+                    Runtime.getRuntime().exec(new String[]{"input", "keyevent", String.valueOf(android.view.KeyEvent.KEYCODE_TAB)}).waitFor();
+                    success = true;
+                } catch (Exception e) { success = false; }
+                successMsg = "Pressed Tab key";
+                break;
             default:
-                return ToolResult.error("Unknown system key: " + key + ". Must be one of: back, home, recent_apps, notifications, collapse_notifications, lock_screen, unlock_screen.");
+                return ToolResult.error("Unknown system key: " + key + ". Must be one of: back, home, recent_apps, notifications, collapse_notifications, lock_screen, unlock_screen, enter, tab.");
         }
 
         return success ? ToolResult.success(successMsg)

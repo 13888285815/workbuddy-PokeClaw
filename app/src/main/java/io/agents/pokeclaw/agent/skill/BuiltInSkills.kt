@@ -32,7 +32,7 @@ object BuiltInSkills {
             SkillStep("find_and_tap", mapOf("text" to "Search"), description = "Tap search icon/bar", optional = true),
             SkillStep("input_text", mapOf("text" to "{query}"), description = "Type query"),
             SkillStep("system_key", mapOf("key" to "enter"), description = "Submit search"),
-            SkillStep("wait", mapOf("duration" to "2000"), description = "Wait for results"),
+            SkillStep("wait", mapOf("duration_ms" to "2000"), description = "Wait for results"),
         ),
         fallbackGoal = "The search bar should have '{query}' typed. Just press enter or submit."
     )
@@ -48,7 +48,7 @@ object BuiltInSkills {
         steps = listOf(
             SkillStep("get_screen_info", description = "Look for submit button"),
             SkillStep("find_and_tap", mapOf("text" to "Send|Submit|Save|Post|Done"), description = "Tap submit button"),
-            SkillStep("wait", mapOf("duration" to "2000"), description = "Wait for submission"),
+            SkillStep("wait", mapOf("duration_ms" to "2000"), description = "Wait for submission"),
         ),
         fallbackGoal = "Find and tap the Send, Submit, or Save button on screen."
     )
@@ -63,9 +63,15 @@ object BuiltInSkills {
         triggerPatterns = listOf("dismiss", "close popup", "close dialog"),
         steps = listOf(
             SkillStep("get_screen_info", description = "Identify popup type"),
-            SkillStep("find_and_tap",
-                mapOf("text" to "OK|Got it|Close|Dismiss|Not now|Later|Skip|Allow|Deny|Cancel|No thanks"),
-                description = "Tap dismiss button"),
+            SkillStep("find_and_tap", mapOf("text" to "OK"), description = "Tap OK", optional = true),
+            SkillStep("find_and_tap", mapOf("text" to "Got it"), description = "Tap Got it", optional = true),
+            SkillStep("find_and_tap", mapOf("text" to "Close"), description = "Tap Close", optional = true),
+            SkillStep("find_and_tap", mapOf("text" to "Close app"), description = "Tap Close app", optional = true),
+            SkillStep("find_and_tap", mapOf("text" to "Dismiss"), description = "Tap Dismiss", optional = true),
+            SkillStep("find_and_tap", mapOf("text" to "Not now"), description = "Tap Not now", optional = true),
+            SkillStep("find_and_tap", mapOf("text" to "Cancel"), description = "Tap Cancel", optional = true),
+            SkillStep("find_and_tap", mapOf("text" to "Skip"), description = "Tap Skip", optional = true),
+            SkillStep("find_and_tap", mapOf("text" to "Wait"), description = "Tap Wait", optional = true),
         ),
         fallbackGoal = "A popup or dialog is blocking. Find and tap the close/dismiss button."
     )
@@ -121,9 +127,9 @@ object BuiltInSkills {
         ),
         steps = listOf(
             SkillStep("open_app", mapOf("app_name" to "WhatsApp"), description = "Open WhatsApp"),
-            SkillStep("wait", mapOf("duration" to "2000"), description = "Wait for app"),
+            SkillStep("wait", mapOf("duration_ms" to "2000"), description = "Wait for app"),
             SkillStep("find_and_tap", mapOf("text" to "{contact}"), description = "Find contact"),
-            SkillStep("wait", mapOf("duration" to "1000"), description = "Wait for chat"),
+            SkillStep("wait", mapOf("duration_ms" to "1000"), description = "Wait for chat"),
             SkillStep("input_text", mapOf("text" to "{message}"), description = "Type message"),
             SkillStep("find_and_tap", mapOf("text" to "Send"), description = "Tap send", optional = true),
             SkillStep("system_key", mapOf("key" to "enter"), description = "Submit message"),
@@ -143,7 +149,7 @@ object BuiltInSkills {
         triggerPatterns = listOf("go to .+ tab", "switch to .+ tab", "tap .+ tab"),
         steps = listOf(
             SkillStep("find_and_tap", mapOf("text" to "{tab_name}"), description = "Tap tab"),
-            SkillStep("wait", mapOf("duration" to "1000"), description = "Wait for tab content"),
+            SkillStep("wait", mapOf("duration_ms" to "1000"), description = "Wait for tab content"),
         ),
         fallbackGoal = "Find and tap the '{tab_name}' tab at the bottom of the screen."
     )
@@ -164,9 +170,9 @@ object BuiltInSkills {
         ),
         steps = listOf(
             SkillStep("open_app", mapOf("app_name" to "{app_name}"), description = "Open app"),
-            SkillStep("wait", mapOf("duration" to "3000"), description = "Wait for app"),
+            SkillStep("wait", mapOf("duration_ms" to "3000"), description = "Wait for app"),
             SkillStep("find_and_tap", mapOf("text" to "{section}"), description = "Navigate to section"),
-            SkillStep("wait", mapOf("duration" to "1000"), description = "Wait for content"),
+            SkillStep("wait", mapOf("duration_ms" to "1000"), description = "Wait for content"),
         ),
         fallbackGoal = "Open {app_name} and navigate to the {section} section."
     )
