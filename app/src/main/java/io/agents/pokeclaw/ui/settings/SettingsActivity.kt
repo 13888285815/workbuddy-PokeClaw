@@ -303,6 +303,18 @@ class SettingsActivity : BaseActivity() {
         )
         menuItems[SettingsViewModel.MenuAction.LLM_CONFIG.name]?.setLeadingIconColor(getColor(R.color.colorTextPrimary))
 
+        // Task Budget (inline in model group)
+        val budgetTokens = io.agents.pokeclaw.agent.TaskBudget.getMaxTokens()
+        val budgetCost = io.agents.pokeclaw.agent.TaskBudget.getMaxCost()
+        modelGroup.addMenuItem(
+            leadingIcon = android.R.drawable.ic_menu_recent_history,
+            title = "Task Budget",
+            onClick = { showBudgetDialog() },
+            showDivider = false
+        ).apply {
+            setTrailingText("${io.agents.pokeclaw.agent.ModelPricing.formatTokens(budgetTokens)} / ${String.format("$%.2f", budgetCost)}")
+        }
+
         // Appearance
         val appearanceGroup = findViewById<MenuGroup>(R.id.appearanceGroup)
         appearanceGroup.setTitle("Appearance")
@@ -527,5 +539,58 @@ class SettingsActivity : BaseActivity() {
             actionTitle = getString(R.string.unbind_action),
             onAction = onUnbind
         )
+    }
+
+    private fun showBudgetDialog() {
+        val currentTokens = io.agents.pokeclaw.agent.TaskBudget.getMaxTokens()
+        val currentCost = io.agents.pokeclaw.agent.TaskBudget.getMaxCost()
+
+        val layout = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(48, 32, 48, 16)
+        }
+
+        val tokenLabel = android.widget.TextView(this).apply {
+            text = "Max tokens per task"
+            setTextColor(getColor(R.color.colorTextPrimary))
+        }
+        layout.addView(tokenLabel)
+
+        val tokenOptions = arrayOf("10K", "50K", "100K", "200K", "500K")
+        val tokenValues = intArrayOf(10_000, 50_000, 100_000, 200_000, 500_000)
+        val selectedTokenIndex = tokenValues.indexOfFirst { it == currentTokens }.takeIf { it >= 0 } ?: 2
+
+        val tokenSpinner = android.widget.Spinner(this).apply {
+            adapter = android.widget.ArrayAdapter(this@SettingsActivity, android.R.layout.simple_spinner_dropdown_item, tokenOptions)
+            setSelection(selectedTokenIndex)
+        }
+        layout.addView(tokenSpinner)
+
+        val costLabel = android.widget.TextView(this).apply {
+            text = "\nMax cost per task (USD)"
+            setTextColor(getColor(R.color.colorTextPrimary))
+        }
+        layout.addView(costLabel)
+
+        val costInput = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            setText(String.format("%.2f", currentCost))
+            setTextColor(getColor(R.color.colorTextPrimary))
+        }
+        layout.addView(costInput)
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Task Budget")
+            .setView(layout)
+            .setPositiveButton("Save") { _, _ ->
+                val newTokens = tokenValues[tokenSpinner.selectedItemPosition]
+                val newCost = costInput.text.toString().toDoubleOrNull() ?: currentCost
+                io.agents.pokeclaw.agent.TaskBudget.saveMaxTokens(newTokens)
+                io.agents.pokeclaw.agent.TaskBudget.saveMaxCost(newCost)
+                Toast.makeText(this, "Budget: ${tokenOptions[tokenSpinner.selectedItemPosition]} / \$${String.format("%.2f", newCost)}", Toast.LENGTH_SHORT).show()
+                recreate()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 }
