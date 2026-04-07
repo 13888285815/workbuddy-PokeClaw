@@ -15,9 +15,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.core.content.ContextCompat
+import io.agents.pokeclaw.agent.AgentConfig
+import io.agents.pokeclaw.agent.ModelPricing
+import io.agents.pokeclaw.agent.langchain.http.OkHttpClientBuilderAdapter
 import io.agents.pokeclaw.agent.llm.EngineHolder
+import io.agents.pokeclaw.agent.llm.LlmClient
 import io.agents.pokeclaw.agent.llm.LocalModelManager
+import io.agents.pokeclaw.agent.llm.OpenAiLlmClient
 import io.agents.pokeclaw.appViewModel
+import dev.langchain4j.data.message.AiMessage
+import dev.langchain4j.data.message.SystemMessage
+import dev.langchain4j.data.message.UserMessage
 import io.agents.pokeclaw.channel.Channel as ChannelEnum
 import io.agents.pokeclaw.floating.FloatingCircleManager
 import io.agents.pokeclaw.service.ClawAccessibilityService
@@ -54,6 +62,10 @@ class ComposeChatActivity : ComponentActivity() {
     private var conversation: Conversation? = null
     private var isModelReady = false
 
+    // Cloud LLM chat support
+    private var cloudClient: LlmClient? = null
+    private val cloudHistory = mutableListOf<dev.langchain4j.data.message.ChatMessage>()
+
     // Compose state — observed by ChatScreen
     private val _messages = mutableStateListOf<ChatMessage>()
     private val _modelStatus = mutableStateOf("No model loaded")
@@ -62,6 +74,10 @@ class ComposeChatActivity : ComponentActivity() {
     private val _conversations = mutableStateListOf<ChatHistoryManager.ConversationSummary>()
     private val _isDownloading = mutableStateOf(false)
     private val _downloadProgress = mutableStateOf(0)
+
+    // Session-level token tracking for chat mode
+    private val _sessionTokens = mutableStateOf(0)
+    private val _sessionCost = mutableStateOf(0.0)
 
     // Permission polling
     private val permHandler = Handler(Looper.getMainLooper())
@@ -112,6 +128,8 @@ class ComposeChatActivity : ComponentActivity() {
                 isDownloading = _isDownloading.value,
                 downloadProgress = _downloadProgress.value,
                 isLocalModel = KVUtils.getLlmProvider() == "LOCAL",
+                sessionTokens = _sessionTokens.value,
+                sessionCost = _sessionCost.value,
                 onSendChat = { sendChat(it) },
                 onSendTask = { sendTask(it) },
                 onStartMonitor = { contact -> handleMonitorTask("monitor $contact on WhatsApp") },
@@ -248,6 +266,33 @@ class ComposeChatActivity : ComponentActivity() {
     // ==================== MODEL LOADING ====================
 
     private fun loadModelIfReady() {
+        val provider = KVUtils.getLlmProvider()
+
+        // Cloud mode: create LlmClient, no local engine needed
+        if (provider != "LOCAL") {
+            val apiKey = KVUtils.getLlmApiKey()
+            val modelName = KVUtils.getLlmModelName()
+            if (apiKey.isNotEmpty() && modelName.isNotEmpty()) {
+                val baseUrl = KVUtils.getLlmBaseUrl().trim().ifEmpty { "https://api.openai.com/v1" }
+                val config = AgentConfig.Builder()
+                    .apiKey(apiKey).baseUrl(baseUrl).modelName(modelName)
+                    .temperature(0.7).build()
+                cloudClient = OpenAiLlmClient(config, OkHttpClientBuilderAdapter())
+                cloudHistory.clear()
+                cloudHistory.add(SystemMessage.from("You are a helpful AI assistant on an Android phone."))
+                isModelReady = true
+                _modelStatus.value = "● $modelName · Cloud"
+                setButtonsEnabled(true)
+                XLog.i(TAG, "Cloud chat ready: $modelName via $baseUrl")
+            } else {
+                _modelStatus.value = "Cloud LLM not configured"
+                setButtonsEnabled(false)
+            }
+            return
+        }
+
+        // Local mode: load LiteRT engine
+        cloudClient = null
         val modelPath = KVUtils.getLocalModelPath()
         XLog.d(TAG, "loadModelIfReady: stored=$modelPath loaded=$loadedModelPath engine=${engine != null}")
 
@@ -378,10 +423,6 @@ class ComposeChatActivity : ComponentActivity() {
             runOnUiThread {
                 _modelStatus.value = "● $modelName · $backendLabel"
                 setButtonsEnabled(true)
-                if (_messages.isEmpty()) {
-                    _messages.add(ChatMessage(ChatMessage.Role.ASSISTANT,
-                        "I'm a small AI. I live in your phone, no WiFi, no API needed. I work best with simple questions."))
-                }
             }
         } catch (e: Exception) {
             XLog.e(TAG, "Model load failed", e)
@@ -401,14 +442,38 @@ class ComposeChatActivity : ComponentActivity() {
 
         executor.submit {
             try {
-                val response = conversation!!.sendMessage(text)
-                val responseText = response?.toString() ?: "(no response)"
-                runOnUiThread {
-                    // Update last assistant message
-                    val idx = _messages.indexOfLast { it.role == ChatMessage.Role.ASSISTANT }
-                    if (idx >= 0) _messages[idx] = _messages[idx].copy(content = responseText)
-                    _isProcessing.value = false
-                    saveChat()
+                if (cloudClient != null) {
+                    // Cloud chat: use LlmClient
+                    cloudHistory.add(UserMessage.from(text))
+                    val llmResponse = cloudClient!!.chat(cloudHistory, emptyList())
+                    val responseText = llmResponse.text ?: "(no response)"
+                    cloudHistory.add(AiMessage.from(responseText))
+                    val usage = llmResponse.tokenUsage
+                    val inputTokens = usage?.inputTokenCount() ?: (text.length / 4 + 1)
+                    val outputTokens = usage?.outputTokenCount() ?: (responseText.length / 4 + 1)
+                    runOnUiThread {
+                        val idx = _messages.indexOfLast { it.role == ChatMessage.Role.ASSISTANT }
+                        if (idx >= 0) _messages[idx] = _messages[idx].copy(content = responseText)
+                        _isProcessing.value = false
+                        _sessionTokens.value += inputTokens + outputTokens
+                        _sessionCost.value += ModelPricing.estimateCost(
+                            KVUtils.getLlmModelName(), inputTokens, outputTokens
+                        )
+                        saveChat()
+                    }
+                } else {
+                    // Local chat: use LiteRT conversation
+                    val response = conversation!!.sendMessage(text)
+                    val responseText = response?.toString() ?: "(no response)"
+                    val inputTokensEst = text.length / 4 + 1
+                    val outputTokensEst = responseText.length / 4 + 1
+                    runOnUiThread {
+                        val idx = _messages.indexOfLast { it.role == ChatMessage.Role.ASSISTANT }
+                        if (idx >= 0) _messages[idx] = _messages[idx].copy(content = responseText)
+                        _isProcessing.value = false
+                        _sessionTokens.value += inputTokensEst + outputTokensEst
+                        saveChat()
+                    }
                 }
             } catch (e: Exception) {
                 XLog.e(TAG, "Chat error", e)
@@ -547,17 +612,29 @@ class ComposeChatActivity : ComponentActivity() {
         saveChat()
         conversationId = "chat_${System.currentTimeMillis()}"
         _messages.clear()
-        executor.submit {
-            try { conversation?.close() } catch (_: Exception) {}
-            conversation = engine?.createConversation(
-                ConversationConfig(
-                    systemInstruction = Contents.of("You are a helpful AI assistant on an Android phone."),
-                    samplerConfig = SamplerConfig(topK = 64, topP = 0.95, temperature = 0.7)
-                )
-            )
+        _sessionTokens.value = 0
+        _sessionCost.value = 0.0
+        if (cloudClient != null) {
+            // Cloud mode: reset history
+            cloudHistory.clear()
+            cloudHistory.add(SystemMessage.from("You are a helpful AI assistant on an Android phone."))
             runOnUiThread {
                 addSystem("New conversation started.")
                 loadSidebarHistory()
+            }
+        } else {
+            executor.submit {
+                try { conversation?.close() } catch (_: Exception) {}
+                conversation = engine?.createConversation(
+                    ConversationConfig(
+                        systemInstruction = Contents.of("You are a helpful AI assistant on an Android phone."),
+                        samplerConfig = SamplerConfig(topK = 64, topP = 0.95, temperature = 0.7)
+                    )
+                )
+                runOnUiThread {
+                    addSystem("New conversation started.")
+                    loadSidebarHistory()
+                }
             }
         }
     }

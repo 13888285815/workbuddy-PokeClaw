@@ -84,6 +84,8 @@ fun ChatScreen(
     isDownloading: Boolean = false,
     downloadProgress: Int = 0,
     isLocalModel: Boolean = true,
+    sessionTokens: Int = 0,
+    sessionCost: Double = 0.0,
     onSendChat: (String) -> Unit,
     onSendTask: (String) -> Unit,
     onStartMonitor: (contact: String) -> Unit = {},
@@ -156,6 +158,9 @@ fun ChatScreen(
                 Column {
                     ChatTopBar(
                         modelStatus = modelStatus,
+                        sessionTokens = sessionTokens,
+                        sessionCost = sessionCost,
+                        isLocalModel = isLocalModel,
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onNewChat = onNewChat,
                         onSettings = onOpenSettings,
@@ -271,11 +276,22 @@ fun ChatScreen(
 @Composable
 private fun ChatTopBar(
     modelStatus: String,
+    sessionTokens: Int = 0,
+    sessionCost: Double = 0.0,
+    isLocalModel: Boolean = true,
     onMenuClick: () -> Unit,
     onNewChat: () -> Unit,
     onSettings: () -> Unit,
     colors: PokeclawColors,
 ) {
+    // Token count color: grey → blue → amber → red
+    val tokenColor = when {
+        sessionTokens < 5000 -> colors.textTertiary
+        sessionTokens < 15000 -> Color(0xFF60A5FA) // blue
+        sessionTokens < 25000 -> Color(0xFFFBBF24) // amber
+        else -> Color(0xFFF87171) // soft red
+    }
+
     Column {
         TopAppBar(
             title = {
@@ -305,16 +321,38 @@ private fun ChatTopBar(
                 actionIconContentColor = colors.textSecondary,
             ),
         )
-        // Model status
-        Text(
-            text = modelStatus,
-            fontSize = 11.sp,
-            color = colors.textTertiary,
+        // Model status + live token counter
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(colors.surface)
                 .padding(horizontal = 16.dp, vertical = 4.dp),
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = modelStatus,
+                fontSize = 11.sp,
+                color = colors.textTertiary,
+            )
+            if (sessionTokens > 0) {
+                val formattedTokens = if (sessionTokens >= 1000) {
+                    String.format("%.1fK", sessionTokens / 1000.0)
+                } else {
+                    "$sessionTokens"
+                }
+                val costText = if (sessionCost < 0.01) "< $0.01" else "$${String.format("%.2f", sessionCost)}"
+                val tokenSuffix = if (!isLocalModel && sessionCost > 0) {
+                    " · $formattedTokens tokens · $costText"
+                } else {
+                    " · $formattedTokens tokens"
+                }
+                Text(
+                    text = tokenSuffix,
+                    fontSize = 11.sp,
+                    color = tokenColor,
+                )
+            }
+        }
         HorizontalDivider(color = colors.divider, thickness = 0.5.dp)
     }
 }
