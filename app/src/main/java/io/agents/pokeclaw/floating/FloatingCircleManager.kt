@@ -51,6 +51,7 @@ object FloatingCircleManager {
     private var currentState: State = State.IDLE
     private var currentRound: Int = 0
     private var currentChannel: Channel? = null
+    private var currentTokenState: io.agents.pokeclaw.agent.TokenMonitor.State = io.agents.pokeclaw.agent.TokenMonitor.State.NORMAL
 
     private const val TASK_NOTIFY_DURATION_MS = 3000L // task notification shown for 3 seconds before collapsing
 
@@ -108,9 +109,15 @@ object FloatingCircleManager {
                             circleWidthPx = root.layoutParams?.width ?: -1
                         }
                     }
-                    // Click events
+                    // Click events: tap to bring app to foreground, or stop if over budget
                     view?.setOnClickListener {
-                        onFloatClick()
+                        if (currentState == State.RUNNING &&
+                            (currentTokenState == io.agents.pokeclaw.agent.TokenMonitor.State.WARNING ||
+                             currentTokenState == io.agents.pokeclaw.agent.TokenMonitor.State.CRITICAL)) {
+                            onStopTask()
+                        } else {
+                            onFloatClick()
+                        }
                     }
                     // Initialize state
                     updateStateView(view, currentState)
@@ -226,6 +233,7 @@ object FloatingCircleManager {
     fun updateTokenStatus(step: Int, formattedTokens: String, formattedCost: String, tokenState: io.agents.pokeclaw.agent.TokenMonitor.State) {
         ThreadUtils.runOnUiThread {
             currentRound = step
+            currentTokenState = tokenState
             val view = EasyFloat.getFloatView(FLOAT_TAG) ?: return@runOnUiThread
             val tvStatus = view.findViewById<TextView>(R.id.tvTokenStatus) ?: return@runOnUiThread
             tvStatus.text = "Step $step | $formattedTokens | $formattedCost"
@@ -475,4 +483,5 @@ object FloatingCircleManager {
      * Click callback, can be set externally
      */
     var onFloatClick: () -> Unit = {}
+    var onStopTask: () -> Unit = {}
 }

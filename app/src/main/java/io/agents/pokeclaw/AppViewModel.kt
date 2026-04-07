@@ -132,6 +132,11 @@ class AppViewModel : ViewModel() {
                 XLog.d(TAG, "Floating circle clicked")
                 bringAppToForeground()
             }
+            FloatingCircleManager.onStopTask = {
+                XLog.i(TAG, "Stop task requested from floating pill")
+                cancelCurrentTask()
+                bringAppToForeground()
+            }
         } catch (e: Exception) {
             XLog.e(TAG, "Failed to show floating circle: ${e.message}")
         }
