@@ -22,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import io.agents.pokeclaw.R
+import io.agents.pokeclaw.agent.skill.SkillCategory
+import io.agents.pokeclaw.agent.skill.SkillRegistry
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -209,6 +211,10 @@ fun ChatScreen(
                         taskMessages = taskMessages,
                         onMonitorClick = { showMonitorSheet = true },
                         onSendClick = { showSendSheet = true },
+                        onSkillTap = { example ->
+                            prefillText = example
+                            prefillIsTask = true
+                        },
                         activatingSkill = activatingSkill,
                         monitorActive = activeTasks.isNotEmpty(),
                         colors = colors,
@@ -1010,11 +1016,21 @@ private fun TaskSkillsPanel(
     taskMessages: List<ChatMessage>,
     onMonitorClick: () -> Unit,
     onSendClick: () -> Unit,
+    onSkillTap: (String) -> Unit,
     activatingSkill: String?,
     monitorActive: Boolean,
     colors: PokeclawColors,
     modifier: Modifier = Modifier,
 ) {
+    val builtInSkills = remember { SkillRegistry.getAll() }
+    val categoryIcons = mapOf(
+        SkillCategory.INPUT to Icons.Outlined.Keyboard,
+        SkillCategory.DISMISS to Icons.Outlined.Close,
+        SkillCategory.NAVIGATION to Icons.Outlined.Navigation,
+        SkillCategory.MESSAGING to Icons.Outlined.Chat,
+        SkillCategory.GENERAL to Icons.Outlined.AutoAwesome,
+    )
+
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
@@ -1050,6 +1066,37 @@ private fun TaskSkillsPanel(
                 onClick = onSendClick,
                 colors = colors,
             )
+        }
+
+        // Built-in skills from SkillRegistry
+        if (builtInSkills.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Quick Actions",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.textTertiary,
+                )
+                Text(
+                    "Tap to prefill — saves 3-10 AI steps",
+                    fontSize = 11.sp,
+                    color = colors.textTertiary.copy(alpha = 0.7f),
+                )
+            }
+            items(builtInSkills.size) { index ->
+                val skill = builtInSkills[index]
+                val example = skill.triggerPatterns.firstOrNull()
+                    ?.replace(Regex("\\{\\w+\\}"), "...")
+                    ?: skill.name
+                SkillCard(
+                    icon = categoryIcons[skill.category] ?: Icons.Outlined.AutoAwesome,
+                    title = skill.name,
+                    description = skill.description,
+                    onClick = { onSkillTap(example) },
+                    colors = colors,
+                )
+            }
         }
 
         // Task progress messages (if any)
