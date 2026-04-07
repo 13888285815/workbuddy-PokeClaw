@@ -180,8 +180,7 @@ Every issue makes this better. Every star helps more people find it.
 
 ### v0.3.1 (2026-04-07)
 - **Security fix.** The LAN config server was binding to all network interfaces, exposing API keys to anyone on the same WiFi. Now binds to localhost only.
-- **Removed unused channels.** DingTalk, FeiShu, and QQ channel integrations removed. Smaller APK, cleaner codebase.
-- **Dead code cleanup.** Removed legacy View-based chat UI, unused layouts, and orphaned resources.
+
 
 ### v0.3.0 (2026-04-07)
 - **Cloud LLM support.** Chat and task modes now work with OpenAI, Anthropic, Google, and any OpenAI-compatible API. Switch providers with one tap in the new tabbed LLM Config screen.
