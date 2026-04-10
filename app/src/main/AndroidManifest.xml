@@ -42,7 +42,7 @@
         <activity
             android:name=".ui.splash.SplashActivity"
             android:exported="true"
-            android:screenOrientation="portrait"
+            android:screenOrientation="unspecified"
             android:theme="@style/Theme.PokeClaw.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -54,32 +54,32 @@
         <activity
             android:name=".ui.guide.GuideActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="unspecified" />
         <activity
             android:name=".ui.chat.ComposeChatActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:screenOrientation="unspecified"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".ui.settings.ThemeActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="unspecified" />
         <activity
             android:name=".ui.settings.SettingsActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="unspecified" />
         <activity
             android:name=".ui.settings.LlmConfigActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="unspecified" />
         <activity
             android:name=".ui.settings.ChannelConfigActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="unspecified" />
         <activity
             android:name=".ui.web.WebActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="unspecified" />
         <activity
             android:name=".tool.impl.ClipboardReaderActivity"
             android:exported="false"
